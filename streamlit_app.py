@@ -318,10 +318,21 @@ def predict_grade_with_model(model_objects, inspection_type, critical_flag, viol
         # Convert prediction back to grade
         predicted_grade = grade_encoder.inverse_transform([prediction])[0]
         
-        # Create probability dictionary
+        # Create probability dictionary and ensure all values are positive
         grade_probabilities = {}
         for i, grade in enumerate(grade_encoder.classes_):
-            grade_probabilities[grade] = probabilities[i]
+            grade_probabilities[grade] = max(0.0, float(probabilities[i]))
+        
+        # Normalize probabilities to ensure they sum to 1
+        total_prob = sum(grade_probabilities.values())
+        if total_prob > 0:
+            grade_probabilities = {k: v/total_prob for k, v in grade_probabilities.items()}
+        else:
+            # Fallback if all probabilities are zero
+            grade_probabilities = {predicted_grade: 1.0}
+            for grade in grade_encoder.classes_:
+                if grade != predicted_grade:
+                    grade_probabilities[grade] = 0.0
         
         return predicted_grade, grade_probabilities
         
@@ -374,6 +385,18 @@ def predict_grade_simple(score, critical_flag, violation_code):
     if violation_code == 'Null' and score == 0:
         base_grade = 'A'
         base_prob = {'A': 0.95, 'B': 0.03, 'C': 0.01, 'N': 0.005, 'Z': 0.003, 'P': 0.002}
+    
+    # Ensure all probabilities are positive and sum to 1
+    base_prob = {k: max(0.0, v) for k, v in base_prob.items()}
+    total = sum(base_prob.values())
+    if total > 0:
+        base_prob = {k: v/total for k, v in base_prob.items()}
+    else:
+        # Fallback if something went wrong
+        base_prob = {base_grade: 1.0}
+        for grade in ['A', 'B', 'C', 'N', 'Z', 'P']:
+            if grade not in base_prob:
+                base_prob[grade] = 0.0
     
     return base_grade, base_prob
 
@@ -600,15 +623,46 @@ def main():
                 # Probability chart
                 st.markdown("### 📊 Grade Probabilities")
                 
+                # Ensure probabilities are properly formatted and positive
                 if isinstance(probabilities, dict):
-                    prob_df = pd.DataFrame(list(probabilities.items()), columns=['Grade', 'Probability'])
-                    prob_df['Probability'] = prob_df['Probability'] * 100
+                    # Filter out any negative or zero probabilities for display
+                    filtered_probs = {k: max(0, v) for k, v in probabilities.items() if v > 0.001}
+                    
+                    if filtered_probs:
+                        # Normalize probabilities to ensure they sum to 1
+                        total_prob = sum(filtered_probs.values())
+                        if total_prob > 0:
+                            filtered_probs = {k: v/total_prob for k, v in filtered_probs.items()}
+                        
+                        prob_df = pd.DataFrame(list(filtered_probs.items()), columns=['Grade', 'Probability'])
+                        prob_df['Probability'] = prob_df['Probability'] * 100
+                        prob_df = prob_df.sort_values('Probability', ascending=False)
+                    else:
+                        # Fallback if no valid probabilities
+                        prob_df = pd.DataFrame({
+                            'Grade': [predicted_grade],
+                            'Probability': [100.0]
+                        })
                 else:
-                    prob_df = pd.DataFrame({
-                        'Grade': ['A', 'B', 'C'],
-                        'Probability': [p * 100 for p in probabilities]
-                    })
+                    # Handle list/array format
+                    grade_names = ['A', 'B', 'C']
+                    if len(probabilities) >= 3:
+                        probs = [max(0, p) for p in probabilities[:3]]  # Ensure positive
+                        total = sum(probs)
+                        if total > 0:
+                            probs = [p/total for p in probs]  # Normalize
+                        prob_df = pd.DataFrame({
+                            'Grade': grade_names,
+                            'Probability': [p * 100 for p in probs]
+                        })
+                        prob_df = prob_df[prob_df['Probability'] > 0.1]  # Filter very small probabilities
+                    else:
+                        prob_df = pd.DataFrame({
+                            'Grade': [predicted_grade],
+                            'Probability': [100.0]
+                        })
                 
+                # Create the chart
                 fig_bar = px.bar(
                     prob_df,
                     x='Grade',
@@ -616,10 +670,26 @@ def main():
                     color='Grade',
                     color_discrete_map={'A': '#28a745', 'B': '#ffc107', 'C': '#dc3545', 
                                       'N': '#6c757d', 'Z': '#17a2b8', 'P': '#6610f2'},
-                    title="Probability Distribution"
+                    title="Probability Distribution (%)"
                 )
                 
-                fig_bar.update_layout(showlegend=False, height=400)
+                # Ensure Y-axis starts at 0 and shows percentages
+                fig_bar.update_layout(
+                    showlegend=False, 
+                    height=400,
+                    yaxis=dict(
+                        title="Probability (%)",
+                        range=[0, max(prob_df['Probability'].max() * 1.1, 10)]  # Ensure minimum range
+                    ),
+                    xaxis=dict(title="Grade")
+                )
+                
+                # Add value labels on bars
+                fig_bar.update_traces(
+                    texttemplate='%{y:.1f}%',
+                    textposition='outside'
+                )
+                
                 st.plotly_chart(fig_bar, use_container_width=True)
                 
                 # Recommendations
