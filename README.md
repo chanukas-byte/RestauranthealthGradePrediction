@@ -15,11 +15,18 @@ An intelligent machine learning system that predicts NYC restaurant health inspe
 - **🔍 Feature Importance**: Detailed analysis of factors affecting health grades
 - **📱 Modern UI**: Clean, responsive web interface built with Streamlit
 - **📈 Performance Metrics**: Model evaluation with detailed statistics
+- **☁️ Cloud Deployment**: Optimized for Streamlit Cloud with fallback mechanisms
 
 ## 🚀 Quick Start
 
 ### 🌐 **Live Demo on Streamlit Cloud**
 **🔗 [View Live Application](https://share.streamlit.io/)** *(Available after deployment)*
+
+The cloud-deployed version automatically handles:
+- Model loading with fallback to demo mode
+- Sample data generation if dataset is unavailable  
+- Responsive design for all screen sizes
+- Real-time predictions with confidence scores
 
 ### 💻 **Local Installation**
 
@@ -41,20 +48,27 @@ An intelligent machine learning system that predicts NYC restaurant health inspe
    pip install -r requirements.txt
    ```
 
-3. **Run the application**
+3. **Train the model** (optional - for full features)
    ```bash
-   # For Streamlit Cloud optimized version (recommended)
+   python src/train_model.py
+   ```
+
+4. **Run the application**
+   ```bash
+   # For cloud-optimized version (recommended)
    streamlit run streamlit_app.py
    
-   # Or run the full-featured version (requires dataset)
+   # Or run the full-featured local version
    streamlit run src/modern_app.py
    ```
 
 4. **Open your browser** and navigate to `http://localhost:8501`
 
+## ☁️ Cloud Deployment
+
 ### 🌐 **Streamlit Cloud Deployment**
 
-This project is optimized for easy deployment on Streamlit Cloud:
+The application is optimized for easy deployment on Streamlit Cloud:
 
 1. **Fork this repository** on GitHub
 2. **Visit [share.streamlit.io](https://share.streamlit.io/)**
@@ -64,10 +78,39 @@ This project is optimized for easy deployment on Streamlit Cloud:
 6. **Deploy!** 🚀
 
 The `streamlit_app.py` file is specifically designed for cloud deployment with:
-- Automatic sample data generation
-- Simplified dependencies
-- Optimized performance
-- Cloud-friendly configuration
+- **Smart Model Loading**: Automatically loads the trained model or falls back to demo mode
+- **Dataset Fallbacks**: Multiple fallback options including sample data generation
+- **Optimized Dependencies**: Cloud-friendly requirements and configurations
+- **Responsive Design**: Works perfectly on all screen sizes
+- **Error Handling**: Graceful degradation when resources are unavailable
+
+### 📁 **Cloud-Ready Files**
+
+The following files are specifically created for cloud deployment:
+
+- **`streamlit_app.py`** - Main application optimized for cloud
+- **`requirements.txt`** - Minimal dependencies for cloud deployment
+- **`packages.txt`** - System packages for Streamlit Cloud
+- **`.streamlit/config.toml`** - Streamlit configuration
+- **`sample_dataset.csv`** - Lightweight dataset for demo purposes
+
+### 🔧 **Configuration Options**
+
+For advanced deployment, you can customize:
+
+```toml
+# .streamlit/config.toml
+[server]
+headless = true
+enableCORS = false
+port = $PORT
+
+[theme]
+primaryColor = "#1f77b4"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+```
 
 ## 📊 Model Performance
 
