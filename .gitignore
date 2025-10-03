@@ -147,5 +147,7 @@ Temporary Items
 # Project specific
 *.joblib
 models/*.joblib
+data/*.csv
+*.csv
 temp/
 tmp/

@@ -36,17 +36,23 @@ An intelligent machine learning system that predicts NYC restaurant health inspe
    pip install -r requirements.txt
    ```
 
-3. **Train the model** (if not already trained)
+3. **Download the dataset**
+   - Visit [NYC Open Data - Restaurant Inspection Results](https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j)
+   - Download the CSV file and rename it to `cleaned_restaurant_dataset.csv`
+   - Place it in the `data/` directory
+   - See `data/README.md` for detailed instructions
+
+4. **Train the model** (if not already trained)
    ```bash
    python src/train_model.py
    ```
 
-4. **Run the application**
+5. **Run the application**
    ```bash
    streamlit run src/modern_app.py
    ```
 
-5. **Open your browser** and navigate to `http://localhost:8501`
+6. **Open your browser** and navigate to `http://localhost:8501`
 
 ## 📊 Model Performance
 
