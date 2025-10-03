@@ -71,15 +71,24 @@ def create_demo_model():
         'features': ['Inspection Type', 'Critical Flag', 'Violation Code', 'Inspection Score', 
                     'inspection_year', 'inspection_month', 'inspection_day_of_week'],
         'grade_encoder': LabelEncoder(),
-        'grade_classes': np.array(['A', 'B', 'C']),
-        'class_weights': {0: 1.0, 1: 2.0, 2: 3.0}
+        'grade_classes': np.array(['A', 'B', 'C', 'N', 'Z', 'P']),
+        'class_weights': {0: 1.0, 1: 2.0, 2: 3.0, 3: 2.5, 4: 2.5, 5: 2.5}
     }
     
-    # Fit dummy data
-    demo_model['grade_encoder'].fit(['A', 'B', 'C'])
-    demo_model['label_encoders']['Inspection Type'].fit(['Cycle Inspection / Re-inspection', 'Pre-permit (Operational) / Re-inspection'])
+    # Fit dummy data with actual values from dataset
+    demo_model['grade_encoder'].fit(['A', 'B', 'C', 'N', 'Z', 'P'])
+    demo_model['label_encoders']['Inspection Type'].fit([
+        'Cycle Inspection / Initial Inspection',
+        'Cycle Inspection / Re-inspection', 
+        'Pre-permit (Operational) / Initial Inspection',
+        'Pre-permit (Operational) / Re-inspection',
+        'Cycle Inspection / Reopening Inspection'
+    ])
     demo_model['label_encoders']['Critical Flag'].fit(['Critical', 'Not Critical', 'Not Applicable'])
-    demo_model['label_encoders']['Violation Code'].fit(['02B', '02D', '04A', '06D', '08A', '09B', '10F'])
+    demo_model['label_encoders']['Violation Code'].fit([
+        'Null', '10F', '08A', '06D', '04L', '10B', '06C', '02G', '02B', '04N', 
+        '04A', '04H', '08C', '06A', '09C', '04M', '06E', '10H', '06F'
+    ])
     
     return demo_model
 
@@ -117,47 +126,80 @@ def load_dataset():
         return generate_sample_data()
 
 def generate_sample_data():
-    """Generate sample data that matches your dataset structure"""
+    """Generate sample data that matches your actual dataset structure"""
     np.random.seed(42)
     
-    # Sample data that matches your actual dataset columns
+    # Sample data that matches your actual dataset statistics
     restaurants = [
         "PEKING GARDEN", "BAO BY KAYA", "WOODROW DINER", "JANE FAST FOOD", 
-        "GREENHOUSE CAFE", "GOLDEN DRAGON", "PIZZA PALACE", "SUBWAY",
-        "MCDONALD'S", "BURGER KING", "TACO BELL", "KFC", "WENDY'S"
+        "GREENHOUSE CAFE", "AGEHA JAPANESE FUSION", "THE STRAND BISTRO", "BABY BO'S CANTINA",
+        "LAO JIE HOTPOT", "LOVELL'S GUIDING LIGHT", "YANKEES CLUBHOUSE KITCHEN", "THALASSA"
     ]
     
     locations = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"]
-    cuisine_types = ["Chinese", "American", "Asian/Asian Fusion", "Coffee/Tea", "Pizza", "Fast Food"]
-    inspection_types = ["Cycle Inspection / Re-inspection", "Pre-permit (Operational) / Re-inspection"]
+    location_weights = [0.37, 0.27, 0.24, 0.09, 0.03]  # Based on actual distribution
+    
+    cuisine_types = [
+        "American", "Chinese", "Coffee/Tea", "Pizza", "Italian", "Mexican",
+        "Latin American", "Bakery Products/Desserts", "Caribbean", "Japanese", 
+        "Chicken", "Spanish", "Donuts", "Sandwiches", "Hamburgers"
+    ]
+    
+    inspection_types = [
+        "Cycle Inspection / Initial Inspection",
+        "Cycle Inspection / Re-inspection", 
+        "Pre-permit (Operational) / Initial Inspection",
+        "Pre-permit (Operational) / Re-inspection",
+        "Cycle Inspection / Reopening Inspection"
+    ]
+    inspection_weights = [0.44, 0.36, 0.10, 0.07, 0.03]  # Based on actual distribution
+    
     critical_flags = ["Critical", "Not Critical", "Not Applicable"]
-    violation_codes = ["02B", "02D", "04A", "06D", "08A", "09B", "10F", "Null"]
-    grades = ["A", "B", "C"]
+    critical_weights = [0.52, 0.47, 0.01]  # Based on actual distribution
+    
+    violation_codes = [
+        "Null", "10F", "08A", "06D", "04L", "10B", "06C", "02G", "02B", "04N", 
+        "04A", "04H", "08C", "06A", "09C", "04M", "06E", "10H", "06F"
+    ]
+    
+    # Grades with realistic distribution (A is most common)
+    grades = ["A", "B", "C", "N", "Z", "P"]
+    grade_weights = [0.66, 0.10, 0.05, 0.07, 0.05, 0.07]  # Based on actual distribution
     
     n_samples = 1000
     
     sample_data = []
     for i in range(n_samples):
-        # Generate realistic inspection scores based on grade
-        grade = np.random.choice(grades, p=[0.7, 0.2, 0.1])  # More A grades
-        if grade == "A":
-            score = np.random.gamma(2, 3)  # Lower scores for A
-        elif grade == "B":
-            score = np.random.gamma(3, 5) + 14  # Mid scores for B
-        else:
-            score = np.random.gamma(2, 8) + 28  # Higher scores for C
+        # Select grade first (influences score)
+        grade = np.random.choice(grades, p=grade_weights)
         
-        score = max(0, min(100, score))  # Clamp between 0-100
+        # Generate realistic inspection scores based on grade
+        if grade == "A":
+            score = max(0, np.random.gamma(2, 2))  # Lower scores for A (0-13 typical)
+        elif grade == "B":
+            score = np.random.gamma(3, 4) + 14  # Mid scores for B (14-27 typical)
+        elif grade == "C":
+            score = np.random.gamma(2, 8) + 28  # Higher scores for C (28+ typical)
+        else:  # N, Z, P grades can have various scores
+            score = np.random.gamma(2, 6)
+        
+        score = max(0, min(150, score))  # Clamp between 0-150
+        
+        # Select critical flag based on score
+        if score > 25:
+            critical_flag = np.random.choice(critical_flags, p=[0.7, 0.25, 0.05])
+        else:
+            critical_flag = np.random.choice(critical_flags, p=[0.3, 0.65, 0.05])
         
         sample_data.append({
             'Restaurant ID': 40000000 + i,
             'Restaurant Name': np.random.choice(restaurants),
-            'Location': np.random.choice(locations),
+            'Location': np.random.choice(locations, p=location_weights),
             'Cuisine Type': np.random.choice(cuisine_types),
             'Inspection Date': f"2023-{np.random.randint(1,13):02d}-{np.random.randint(1,29):02d}",
-            'Inspection Type': np.random.choice(inspection_types),
+            'Inspection Type': np.random.choice(inspection_types, p=inspection_weights),
             'Violation Code': np.random.choice(violation_codes),
-            'Critical Flag': np.random.choice(critical_flags),
+            'Critical Flag': critical_flag,
             'Inspection Score': score,
             'Grade': grade
         })
@@ -287,28 +329,51 @@ def predict_grade_with_model(model_objects, inspection_type, critical_flag, viol
         st.warning(f"Model prediction failed: {str(e)}. Using fallback prediction.")
         return predict_grade_simple(inspection_score, critical_flag, violation_code)
 
-def predict_grade_simple(score, critical_flag, violation_type):
-    """Simple rule-based prediction for demo purposes"""
+def predict_grade_simple(score, critical_flag, violation_code):
+    """Enhanced rule-based prediction that matches actual dataset patterns"""
     
-    # Basic prediction logic
+    # Initialize base probabilities for all possible grades
+    base_prob = {'A': 0.0, 'B': 0.0, 'C': 0.0, 'N': 0.0, 'Z': 0.0, 'P': 0.0}
+    
+    # Primary scoring logic (based on actual NYC grading system)
     if score <= 13:
         base_grade = 'A'
-        base_prob = {'A': 0.8, 'B': 0.15, 'C': 0.05}
+        base_prob = {'A': 0.85, 'B': 0.10, 'C': 0.03, 'N': 0.01, 'Z': 0.005, 'P': 0.005}
     elif score <= 27:
         base_grade = 'B' 
-        base_prob = {'A': 0.2, 'B': 0.7, 'C': 0.1}
+        base_prob = {'A': 0.15, 'B': 0.70, 'C': 0.12, 'N': 0.02, 'Z': 0.005, 'P': 0.005}
     else:
         base_grade = 'C'
-        base_prob = {'A': 0.1, 'B': 0.2, 'C': 0.7}
+        base_prob = {'A': 0.05, 'B': 0.15, 'C': 0.75, 'N': 0.03, 'Z': 0.01, 'P': 0.01}
     
-    # Adjust based on critical flag
+    # Adjust based on critical violations
     if critical_flag == 'Critical':
+        # Critical violations increase chance of lower grades
         if base_grade == 'A':
             base_grade = 'B'
-            base_prob = {'A': 0.3, 'B': 0.6, 'C': 0.1}
+            base_prob = {'A': 0.40, 'B': 0.50, 'C': 0.08, 'N': 0.015, 'Z': 0.003, 'P': 0.002}
         elif base_grade == 'B':
             base_grade = 'C'
-            base_prob = {'A': 0.1, 'B': 0.3, 'C': 0.6}
+            base_prob = {'A': 0.05, 'B': 0.35, 'C': 0.55, 'N': 0.03, 'Z': 0.01, 'P': 0.01}
+        # C grade gets worse with critical violations
+        elif base_grade == 'C':
+            base_prob = {'A': 0.02, 'B': 0.08, 'C': 0.80, 'N': 0.05, 'Z': 0.03, 'P': 0.02}
+    
+    # Specific violation code adjustments
+    serious_violations = ['04M', '04L', '04H', '08A']  # Roaches, mice, adulterated food, vermin
+    if violation_code in serious_violations:
+        # These violations often lead to pending grades or closures
+        if base_grade in ['B', 'C']:
+            base_prob['Z'] += 0.10  # Increase pending grade probability
+            base_prob['C'] += 0.05  # Increase C grade probability
+            # Normalize
+            total = sum(base_prob.values())
+            base_prob = {k: v/total for k, v in base_prob.items()}
+    
+    # Handle no violations case
+    if violation_code == 'Null' and score == 0:
+        base_grade = 'A'
+        base_prob = {'A': 0.95, 'B': 0.03, 'C': 0.01, 'N': 0.005, 'Z': 0.003, 'P': 0.002}
     
     return base_grade, base_prob
 
@@ -386,22 +451,30 @@ def main():
         with col1:
             st.markdown("#### 🏢 Restaurant Details")
             
-            restaurant_name = st.text_input("Restaurant Name", "Sample Restaurant")
+            restaurant_name = st.text_input("Restaurant Name", "PEKING GARDEN")
             
-            # Get cuisine options from dataset or use defaults
-            if 'Cuisine Type' in df.columns:
-                cuisine_options = ['Other'] + sorted(df['Cuisine Type'].dropna().unique().tolist()[:20])
-            else:
-                cuisine_options = ['American', 'Chinese', 'Italian', 'Mexican', 'Pizza', 'Japanese', 'Thai', 'Other']
+            # Use actual cuisine types from dataset (top 15 most common)
+            cuisine_options = [
+                'American', 'Chinese', 'Coffee/Tea', 'Pizza', 'Italian', 'Mexican',
+                'Latin American', 'Bakery Products/Desserts', 'Caribbean', 'Japanese', 
+                'Chicken', 'Spanish', 'Donuts', 'Sandwiches', 'Hamburgers', 'Thai',
+                'Indian', 'Greek', 'French', 'Seafood', 'Asian/Asian Fusion', 'Other'
+            ]
             cuisine = st.selectbox("Cuisine Type", cuisine_options)
             
-            # Get inspection type options from dataset or use defaults
-            if 'Inspection Type' in df.columns:
-                inspection_type_options = sorted(df['Inspection Type'].dropna().unique().tolist())
-            else:
-                inspection_type_options = ['Cycle Inspection / Re-inspection', 'Pre-permit (Operational) / Re-inspection']
-            
+            # Use actual inspection types from dataset (top 5 most common)
+            inspection_type_options = [
+                'Cycle Inspection / Initial Inspection',
+                'Cycle Inspection / Re-inspection', 
+                'Pre-permit (Operational) / Initial Inspection',
+                'Pre-permit (Operational) / Re-inspection',
+                'Cycle Inspection / Reopening Inspection'
+            ]
             inspection_type = st.selectbox("Inspection Type", inspection_type_options)
+            
+            # Borough selection
+            location_options = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island']
+            location = st.selectbox("Borough", location_options)
         
         with col2:
             st.markdown("#### 📊 Inspection Results")
@@ -409,9 +482,9 @@ def main():
             score = st.slider(
                 "Inspection Score",
                 min_value=0,
-                max_value=100,
+                max_value=150,
                 value=15,
-                help="Lower scores indicate better compliance"
+                help="Lower scores indicate better compliance (0 = perfect, 150+ = severe violations)"
             )
             
             critical_flag = st.selectbox(
@@ -420,13 +493,42 @@ def main():
                 help="Whether violations pose immediate health risks"
             )
             
-            # Get violation codes from dataset or use defaults
-            if 'Violation Code' in df.columns:
-                violation_codes = ['None'] + sorted([str(x) for x in df['Violation Code'].dropna().unique().tolist()[:20]])
-            else:
-                violation_codes = ['02B', '02D', '04A', '04L', '06C', '06D', '08A', '09B', '10F', 'Other']
+            # Use actual violation codes from dataset (top 15 most common)
+            violation_code_options = [
+                'Null',  # For no violations
+                '10F', '08A', '06D', '04L', '10B', '06C', '02G', '02B', '04N', 
+                '04A', '04H', '08C', '06A', '09C', '04M', '06E', '10H', '06F', 'Other'
+            ]
             
-            violation_code = st.selectbox("Primary Violation Code", violation_codes)
+            # Create user-friendly descriptions
+            violation_descriptions = {
+                'Null': 'No violations recorded',
+                '10F': '10F - Wiping cloths not stored clean and dry',
+                '08A': '08A - Facility not vermin proof', 
+                '06D': '06D - Food contact surface not properly washed',
+                '04L': '04L - Evidence of mice or live mice in establishment',
+                '10B': '10B - Plumbing not properly installed or maintained',
+                '06C': '06C - Food not protected from contamination',
+                '02G': '02G - Cold food item held above 41° F',
+                '02B': '02B - Hot food item not held at or above 140° F',
+                '04N': '04N - Filth flies or food/refuse/sewage associated flies',
+                '04A': '04A - Food Protection Certificate not held by supervisor',
+                '04H': '04H - Raw, cooked or prepared food is adulterated',
+                '08C': '08C - Pesticide use not in accordance with label',
+                '06A': '06A - Personal cleanliness inadequate',
+                '09C': '09C - Food contact surface not properly maintained',
+                '04M': '04M - Live roaches present in facility',
+                '06E': '06E - Sanitized equipment or utensil improperly used',
+                '10H': '10H - Proper sanitization not provided for utensil ware',
+                '06F': '06F - Wiping cloths soiled or not stored in sanitizing solution',
+                'Other': 'Other violation type'
+            }
+            
+            violation_code = st.selectbox(
+                "Primary Violation Type", 
+                violation_code_options,
+                format_func=lambda x: violation_descriptions.get(x, x)
+            )
             
             inspection_date = st.date_input("Inspection Date", datetime.date.today())
         
