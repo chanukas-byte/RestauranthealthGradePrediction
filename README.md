@@ -18,12 +18,17 @@ An intelligent machine learning system that predicts NYC restaurant health inspe
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 🌐 **Live Demo on Streamlit Cloud**
+**🔗 [View Live Application](https://share.streamlit.io/)** *(Available after deployment)*
+
+### 💻 **Local Installation**
+
+#### Prerequisites
 
 - Python 3.8 or higher
 - pip package manager
 
-### Installation
+#### Installation
 
 1. **Clone the repository**
    ```bash
@@ -36,23 +41,33 @@ An intelligent machine learning system that predicts NYC restaurant health inspe
    pip install -r requirements.txt
    ```
 
-3. **Download the dataset**
-   - Visit [NYC Open Data - Restaurant Inspection Results](https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j)
-   - Download the CSV file and rename it to `cleaned_restaurant_dataset.csv`
-   - Place it in the `data/` directory
-   - See `data/README.md` for detailed instructions
-
-4. **Train the model** (if not already trained)
+3. **Run the application**
    ```bash
-   python src/train_model.py
-   ```
-
-5. **Run the application**
-   ```bash
+   # For Streamlit Cloud optimized version (recommended)
+   streamlit run streamlit_app.py
+   
+   # Or run the full-featured version (requires dataset)
    streamlit run src/modern_app.py
    ```
 
-6. **Open your browser** and navigate to `http://localhost:8501`
+4. **Open your browser** and navigate to `http://localhost:8501`
+
+### 🌐 **Streamlit Cloud Deployment**
+
+This project is optimized for easy deployment on Streamlit Cloud:
+
+1. **Fork this repository** on GitHub
+2. **Visit [share.streamlit.io](https://share.streamlit.io/)**
+3. **Connect your GitHub account**
+4. **Select your forked repository**
+5. **Set main file path**: `streamlit_app.py`
+6. **Deploy!** 🚀
+
+The `streamlit_app.py` file is specifically designed for cloud deployment with:
+- Automatic sample data generation
+- Simplified dependencies
+- Optimized performance
+- Cloud-friendly configuration
 
 ## 📊 Model Performance
 
