@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
 import os
 from pathlib import Path
 import datetime
@@ -10,6 +9,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
+
+# Try different ways to import joblib for better cloud compatibility
+try:
+    import joblib
+except ImportError:
+    try:
+        from sklearn.externals import joblib
+    except ImportError:
+        import pickle as joblib  # Fallback to pickle
 
 # Page configuration
 st.set_page_config(
@@ -583,8 +591,15 @@ def load_model():
         model_path = Path(__file__).parent / "models" / "restaurant_balanced_model.joblib"
         
         if model_path.exists():
-            model_objects = joblib.load(model_path)
-            return model_objects
+            try:
+                model_objects = joblib.load(model_path)
+                return model_objects
+            except Exception as e:
+                st.warning(f"Joblib load failed: {e}. Trying pickle...")
+                with open(model_path, 'rb') as f:
+                    import pickle
+                    model_objects = pickle.load(f)
+                    return model_objects
         else:
             # Alternative paths for cloud deployment
             alternative_paths = [
@@ -597,8 +612,14 @@ def load_model():
                 try:
                     model_objects = joblib.load(alt_path)
                     return model_objects
-                except:
-                    continue
+                except Exception as e:
+                    try:
+                        with open(alt_path, 'rb') as f:
+                            import pickle
+                            model_objects = pickle.load(f)
+                            return model_objects
+                    except:
+                        continue
             
             st.error("⚠️ Model file not found")
             st.info("Creating a demo model for preview purposes...")
@@ -1395,181 +1416,41 @@ def display_prediction_results(predicted_grade, grade_probs, score):
         """, unsafe_allow_html=True)
     
     with col2:
-        # Enhanced probability distribution with multiple visualizations
+        # Probability distribution with modern chart
         if grade_probs:
             st.markdown("#### 📊 Confidence Distribution")
             
-            # Create tabs for different visualization types
-            chart_tab1, chart_tab2, chart_tab3 = st.tabs(["📊 Bar Chart", "🍰 Pie Chart", "📈 Gauge Chart"])
-            
-            # Prepare data
+            # Create a modern bar chart
             prob_df = pd.DataFrame({
                 'Grade': list(grade_probs.keys()),
                 'Probability': [p * 100 for p in grade_probs.values()]
             }).sort_values('Probability', ascending=False)
             
-            grade_colors = {
-                'A': '#48bb78', 'B': '#ed8936', 'C': '#e53e3e',
-                'N': '#6c757d', 'Z': '#17a2b8', 'P': '#6610f2'
-            }
-            
-            with chart_tab1:
-                # Enhanced bar chart with gradient colors and animations
-                fig_bar = px.bar(
-                    prob_df, 
-                    x='Grade', 
-                    y='Probability',
-                    color='Grade',
-                    color_discrete_map=grade_colors,
-                    title="Grade Probability Distribution",
-                    text='Probability'
-                )
-                
-                # Enhance the bar chart styling
-                fig_bar.update_traces(
-                    texttemplate='%{text:.1f}%',
-                    textposition='outside',
-                    marker_line_color='rgba(255,255,255,0.6)',
-                    marker_line_width=2
-                )
-                
-                fig_bar.update_layout(
-                    showlegend=False,
-                    height=350,
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='#000000', size=12),
-                    title_font_size=16,
-                    xaxis_title="Health Grade",
-                    yaxis_title="Confidence (%)",
-                    xaxis=dict(
-                        showgrid=False,
-                        tickfont=dict(size=14, color='#000000')
-                    ),
-                    yaxis=dict(
-                        showgrid=True,
-                        gridcolor='rgba(0,0,0,0.1)',
-                        tickfont=dict(size=12, color='#000000')
-                    )
-                )
-                
-                st.plotly_chart(fig_bar, use_container_width=True)
-            
-            with chart_tab2:
-                # Interactive pie chart
-                fig_pie = px.pie(
-                    prob_df,
-                    values='Probability',
-                    names='Grade',
-                    color='Grade',
-                    color_discrete_map=grade_colors,
-                    title="Grade Confidence Breakdown"
-                )
-                
-                fig_pie.update_traces(
-                    textposition='inside',
-                    textinfo='percent+label',
-                    hovertemplate='<b>Grade %{label}</b><br>Confidence: %{value:.1f}%<extra></extra>',
-                    pull=[0.1 if grade == predicted_grade else 0 for grade in prob_df['Grade']]  # Highlight predicted grade
-                )
-                
-                fig_pie.update_layout(
-                    height=350,
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='#000000', size=12),
-                    title_font_size=16,
-                    showlegend=True,
-                    legend=dict(
-                        orientation="h",
-                        yanchor="bottom",
-                        y=-0.2,
-                        xanchor="center",
-                        x=0.5
-                    )
-                )
-                
-                st.plotly_chart(fig_pie, use_container_width=True)
-            
-            with chart_tab3:
-                # Gauge chart for main prediction confidence
-                confidence = max(grade_probs.values()) * 100
-                
-                fig_gauge = go.Figure(go.Indicator(
-                    mode = "gauge+number+delta",
-                    value = confidence,
-                    domain = {'x': [0, 1], 'y': [0, 1]},
-                    title = {'text': f"Prediction Confidence<br><span style='font-size:0.8em;color:gray'>Grade {predicted_grade}</span>"},
-                    delta = {'reference': 75, 'increasing': {'color': "green"}, 'decreasing': {'color': "red"}},
-                    gauge = {
-                        'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
-                        'bar': {'color': grade_colors.get(predicted_grade, '#6c757d')},
-                        'bgcolor': "white",
-                        'borderwidth': 2,
-                        'bordercolor': "gray",
-                        'steps': [
-                            {'range': [0, 50], 'color': 'lightgray'},
-                            {'range': [50, 75], 'color': 'yellow'},
-                            {'range': [75, 90], 'color': 'orange'},
-                            {'range': [90, 100], 'color': 'lightgreen'}
-                        ],
-                        'threshold': {
-                            'line': {'color': "red", 'width': 4},
-                            'thickness': 0.75,
-                            'value': 90
-                        }
-                    }
-                ))
-                
-                fig_gauge.update_layout(
-                    height=350,
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='#000000', size=12)
-                )
-                
-                st.plotly_chart(fig_gauge, use_container_width=True)
-            
-            # Enhanced confidence metrics
-            st.markdown("---")
-            col_metrics1, col_metrics2, col_metrics3 = st.columns(3)
-            
-            with col_metrics1:
-                confidence = max(grade_probs.values()) * 100
-                confidence_color = "🟢" if confidence >= 80 else "🟡" if confidence >= 60 else "🔴"
-                st.metric("🎯 Overall Confidence", f"{confidence:.1f}%", f"{confidence_color}")
-            
-            with col_metrics2:
-                predicted_prob = grade_probs.get(predicted_grade, 0) * 100
-                st.metric(f"📊 Grade {predicted_grade} Probability", f"{predicted_prob:.1f}%")
-            
-            with col_metrics3:
-                # Calculate uncertainty (entropy-like measure)
-                probs = list(grade_probs.values())
-                uncertainty = -sum(p * np.log2(p + 1e-10) for p in probs if p > 0)
-                uncertainty_normalized = (uncertainty / np.log2(len(probs))) * 100
-                uncertainty_color = "🟢" if uncertainty_normalized < 30 else "🟡" if uncertainty_normalized < 60 else "🔴"
-                st.metric("🔄 Uncertainty", f"{uncertainty_normalized:.1f}%", f"{uncertainty_color}")
-            
-            # Probability breakdown table
-            st.markdown("#### 📋 Detailed Breakdown")
-            
-            # Enhanced probability table with styling
-            prob_display_df = prob_df.copy()
-            prob_display_df['Confidence Level'] = prob_display_df['Probability'].apply(
-                lambda x: "Very High" if x >= 80 else "High" if x >= 60 else "Medium" if x >= 40 else "Low"
+            fig = px.bar(
+                prob_df, 
+                x='Grade', 
+                y='Probability',
+                color='Grade',
+                color_discrete_map={
+                    'A': '#48bb78', 'B': '#ed8936', 'C': '#e53e3e',
+                    'N': '#6c757d', 'Z': '#17a2b8', 'P': '#6610f2'
+                },
+                title="Grade Probability Distribution"
             )
-            prob_display_df['Visual'] = prob_display_df.apply(
-                lambda row: f"{'█' * int(row['Probability'] / 5)}{'░' * (20 - int(row['Probability'] / 5))}", axis=1
-            )
-            prob_display_df = prob_display_df.round(1)
             
-            # Display as styled table
-            st.dataframe(
-                prob_display_df[['Grade', 'Probability', 'Confidence Level', 'Visual']],
-                use_container_width=True,
-                hide_index=True
+            fig.update_layout(
+                showlegend=False,
+                height=300,
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='#2d3748')
             )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Confidence percentage
+            confidence = max(grade_probs.values()) * 100
+            st.metric("Prediction Confidence", f"{confidence:.1f}%")
 
 def display_recommendations(predicted_grade, score):
     """Display simple recommendations"""
@@ -1917,6 +1798,7 @@ def show_health_authority_dashboard():
             
             st.markdown("#### 📊 Inspection Score")
             inspection_score = st.number_input(
+
                 "Inspection Score",
                 min_value=0,
                 max_value=150,
