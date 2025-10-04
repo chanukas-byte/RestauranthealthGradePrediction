@@ -42,6 +42,23 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
+    /* Main content area with white background for forms */
+    .main .block-container {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 15px;
+        padding: 2rem;
+        margin: 1rem 0;
+    }
+    
+    /* Form areas get solid white background */
+    .stForm {
+        background: #ffffff !important;
+        border-radius: 15px;
+        padding: 2rem;
+        margin: 1rem 0;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
     /* Role Selection Styling */
     .role-card {
         background: rgba(255,255,255,0.95);
@@ -151,7 +168,7 @@ st.markdown("""
     
     /* Form Styling */
     .prediction-form {
-        background: rgba(255,255,255,0.95);
+        background: #ffffff !important;
         border-radius: 15px;
         padding: 2.5rem;
         margin: 2rem 0;
@@ -161,9 +178,10 @@ st.markdown("""
     .form-section {
         margin-bottom: 2rem;
         padding: 1.5rem;
-        background: #f8fafc;
+        background: #ffffff !important;
         border-radius: 10px;
         border-left: 4px solid #667eea;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
     .form-section h4 {
@@ -296,11 +314,12 @@ st.markdown("""
     }
     
     .stSelectbox > div > div, .stTextInput > div > div, .stNumberInput > div > div {
-        background-color: rgba(255, 255, 255, 0.95) !important;
+        background-color: #ffffff !important;
         border: 2px solid #667eea !important;
         border-radius: 8px !important;
         color: #000000 !important;
         font-weight: 800 !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
     }
     
     /* Input Field Text - Bold Black */
