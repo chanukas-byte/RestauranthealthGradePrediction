@@ -21,7 +21,5 @@ serverAddress = "0.0.0.0"
 level = "info"
 
 [client]
-caching = true
 displayEnabled = true
-showErrorDetails = false
 showErrorDetails = false
