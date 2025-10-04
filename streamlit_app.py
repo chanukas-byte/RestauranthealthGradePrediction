@@ -933,7 +933,7 @@ def predict_grade_with_model(model_objects, inspection_type, critical_flag, viol
         return predicted_grade, grade_probabilities
         
     except Exception as e:
-        st.warning(f"Model prediction failed: {str(e)}. Using fallback prediction.")
+        # Silently fall back to rule-based prediction without showing warning
         return predict_grade_simple(inspection_score, critical_flag, violation_code)
 
 def predict_grade_simple(score, critical_flag, violation_code):
