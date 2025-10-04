@@ -38,16 +38,17 @@ st.markdown("""
     
     /* Global Styling */
     .stApp {
-        background: linear-gradient(135deg, #1e1e2e 0%, #2d3748 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
         font-family: 'Inter', sans-serif;
     }
     
     /* Main content area with white background for forms */
     .main .block-container {
-        background: rgba(255, 255, 255, 0.02);
+        background: rgba(255, 255, 255, 0.95);
         border-radius: 15px;
         padding: 2rem;
         margin: 1rem 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     }
     
     /* Form areas get solid white background */
@@ -262,11 +263,11 @@ st.markdown("""
     
     /* Sidebar Styling */
     .css-1d391kg {
-        background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+        background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
     }
     
     .css-1d391kg .css-1v0mbdj {
-        color: white;
+        color: #2d3748;
     }
     
     /* Enhanced Text Visibility - All Frontend Text Bold and Black */
@@ -349,25 +350,25 @@ st.markdown("""
     
     /* Expander Styling */
     .streamlit-expanderHeader {
-        background: rgba(255, 255, 255, 0.1) !important;
-        color: #ffffff !important;
+        background: rgba(139, 92, 246, 0.1) !important;
+        color: #2d3748 !important;
         font-weight: 600 !important;
         border-radius: 8px !important;
     }
     
     .streamlit-expanderContent {
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.95) !important;
         border-radius: 8px !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border: 1px solid rgba(139, 92, 246, 0.2) !important;
     }
     
     /* Metric and Data Display */
     .metric {
-        background: rgba(255, 255, 255, 0.1) !important;
+        background: rgba(255, 255, 255, 0.95) !important;
         border-radius: 10px !important;
         padding: 1rem !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        color: #2d3748 !important;
+        border: 1px solid rgba(139, 92, 246, 0.2) !important;
     }
     
     /* Sidebar Text - Bold Black */
@@ -597,6 +598,57 @@ st.markdown("""
     div[role="option"] * {
         color: #000000 !important;
         font-weight: 800 !important;
+    }
+    
+    /* STREAMLIT METRICS - ENSURE BLACK TEXT FOR PREDICTION VALUES */
+    div[data-testid="metric-container"] {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 10px !important;
+        padding: 1rem !important;
+        border: 1px solid rgba(139, 92, 246, 0.2) !important;
+    }
+    
+    div[data-testid="metric-container"] * {
+        color: #000000 !important;
+        font-weight: 800 !important;
+        text-shadow: none !important;
+    }
+    
+    /* Metric Values - Make prediction results clearly visible */
+    div[data-testid="metric-container"] > div > div:first-child {
+        color: #000000 !important;
+        font-weight: 900 !important;
+        font-size: 2rem !important;
+    }
+    
+    /* Metric Labels */
+    div[data-testid="metric-container"] > div > div:last-child {
+        color: #4a5568 !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Streamlit Metric Component Override */
+    .stMetric {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 8px !important;
+        padding: 1rem !important;
+    }
+    
+    .stMetric * {
+        color: #000000 !important;
+        font-weight: 800 !important;
+    }
+    
+    /* Additional metric styling for prediction results */
+    [data-testid="stMetricValue"] {
+        color: #000000 !important;
+        font-weight: 900 !important;
+        font-size: 1.5rem !important;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        color: #2d3748 !important;
+        font-weight: 600 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1168,26 +1220,6 @@ def show_role_selection():
     # Add interactive welcome message
     st.markdown("## 👋 Welcome! Choose Your Role")
     
-    # Interactive info about the system
-    with st.expander("🔍 Learn About Our AI System", expanded=False):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("""
-            **🤖 AI Technology:**
-            - Random Forest Machine Learning
-            - 95.8% Prediction Accuracy
-            - Trained on 54,000+ real inspections
-            - Real-time grade predictions
-            """)
-        with col2:
-            st.markdown("""
-            **📊 Data Sources:**
-            - NYC Department of Health records
-            - Live inspection database
-            - Historical grade patterns
-            - Violation code analysis
-            """)
-    
     st.markdown("### Select your role to access personalized features:")
     
     # Enhanced role selection with better interaction
@@ -1276,22 +1308,6 @@ def show_role_selection():
         - View safety ratings
         - Make informed choices
         """)
-        
-        # Interactive demo button
-        if st.button("🎬 View Demo", help="See how the system works"):
-            st.info("Demo: Select any role above to start exploring!")
-            
-        # System status indicator
-        st.markdown("---")
-        status_color = "🟢" if model_objects else "🟡"
-        status_text = "Online" if model_objects else "Demo Mode"
-        st.markdown(f"**System Status:** {status_color} {status_text}")
-        
-        if df is not None:
-            st.markdown(f"**Data Status:** 🟢 Connected")
-            st.markdown(f"**Last Updated:** Today")
-        else:
-            st.markdown(f"**Data Status:** 🟡 Sample Data")
 
 def render_prediction_interface(model_objects, df):
     """Modern prediction interface with enhanced styling"""
