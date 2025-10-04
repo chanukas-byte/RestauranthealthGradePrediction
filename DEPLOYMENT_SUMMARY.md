@@ -28,24 +28,28 @@ RestauranthealthGradePrediction/
 ### 🎯 What's Been Accomplished
 
 #### ✅ **Code Organization**
+
 - **3 Streamlit Applications**: Basic, Modern, and Ultra-modern versions
 - **Complete ML Pipeline**: Data preprocessing, model training, and evaluation
 - **Professional UI**: Clean, responsive interfaces with interactive charts
 - **Modular Structure**: Well-organized codebase with clear separation of concerns
 
 #### ✅ **Model Performance**
+
 - **95.8% Accuracy**: High-performance Random Forest classifier
 - **84.8% F1-Score**: Balanced performance across all grades
 - **67K+ Training Samples**: Robust dataset from NYC health inspections
 - **7 Engineered Features**: Including temporal and categorical features
 
 #### ✅ **Documentation**
+
 - **Comprehensive README**: Installation, usage, and technical details
 - **Code Comments**: Well-documented functions and classes
 - **Setup Instructions**: Clear steps for dataset and model setup
 - **API Documentation**: Feature descriptions and model details
 
 #### ✅ **GitHub Ready**
+
 - **Professional .gitignore**: Excludes large files and temporary data
 - **Dependency Management**: Complete requirements.txt
 - **Branch Structure**: Main branch with clean commit history
@@ -56,15 +60,18 @@ RestauranthealthGradePrediction/
 Users who clone your repository will need to:
 
 1. **Install Dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 2. **Download Dataset**
+
    - Visit [NYC Open Data](https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j)
    - Download and place in `data/` folder as `cleaned_restaurant_dataset.csv`
 
 3. **Train Model**
+
    ```bash
    python src/train_model.py
    ```
@@ -85,6 +92,7 @@ Users who clone your repository will need to:
 ### 🎨 Application Features
 
 #### **Modern App (Recommended)**
+
 - Clean, professional interface
 - Interactive prediction forms
 - Real-time grade predictions
@@ -93,11 +101,13 @@ Users who clone your repository will need to:
 - Feature importance analysis
 
 #### **Balanced App (Basic)**
+
 - Simple, straightforward UI
 - Essential prediction functionality
 - Clean result displays
 
 #### **Ultra-Modern App (Advanced)**
+
 - Glassmorphism design effects
 - Advanced animations and transitions
 - Professional dark theme
@@ -114,6 +124,7 @@ Users who clone your repository will need to:
 ### 📝 Next Steps
 
 Your repository is now ready for:
+
 - ✅ **GitHub Deployment**
 - ✅ **Collaboration**
 - ✅ **Portfolio Showcase**
@@ -123,6 +134,7 @@ Your repository is now ready for:
 ### 🏆 Achievement Unlocked!
 
 You've successfully created a **complete end-to-end machine learning project** with:
+
 - Advanced ML model with excellent performance
 - Professional web interface
 - Comprehensive documentation

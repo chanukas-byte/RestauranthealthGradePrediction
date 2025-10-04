@@ -7,6 +7,7 @@ This directory contains the trained machine learning models for the restaurant h
 The trained model file `restaurant_balanced_model.joblib` is not included in the repository due to its large size (10MB+). To generate the model:
 
 1. **Run the training script:**
+
    ```bash
    python src/train_model.py
    ```
@@ -27,6 +28,7 @@ The trained model file `restaurant_balanced_model.joblib` is not included in the
 ## Model Components
 
 The saved model file contains:
+
 - Trained Random Forest model
 - Label encoders for categorical features
 - Standard scaler for numerical features
@@ -36,6 +38,7 @@ The saved model file contains:
 ## Note
 
 If you encounter any issues with model generation, ensure you have:
+
 - Python 3.8+ installed
 - All required dependencies from `requirements.txt`
 - The dataset file `data/cleaned_restaurant_dataset.csv`

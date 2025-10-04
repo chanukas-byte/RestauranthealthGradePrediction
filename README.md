@@ -20,11 +20,13 @@ An intelligent machine learning system that predicts NYC restaurant health inspe
 ## 🚀 Quick Start
 
 ### 🌐 **Live Demo on Streamlit Cloud**
-**🔗 [View Live Application](https://share.streamlit.io/)** *(Available after deployment)*
+
+**🔗 [View Live Application](https://share.streamlit.io/)** _(Available after deployment)_
 
 The cloud-deployed version automatically handles:
+
 - Model loading with fallback to demo mode
-- Sample data generation if dataset is unavailable  
+- Sample data generation if dataset is unavailable
 - Responsive design for all screen sizes
 - Real-time predictions with confidence scores
 
@@ -38,31 +40,35 @@ The cloud-deployed version automatically handles:
 #### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/chanukas-byte/RestauranthealthGradePrediction.git
    cd RestauranthealthGradePrediction
    ```
 
 2. **Install dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. **Train the model** (optional - for full features)
+
    ```bash
    python src/train_model.py
    ```
 
 4. **Run the application**
+
    ```bash
    # For cloud-optimized version (recommended)
    streamlit run streamlit_app.py
-   
+
    # Or run the full-featured local version
    streamlit run src/modern_app.py
    ```
 
-4. **Open your browser** and navigate to `http://localhost:8501`
+5. **Open your browser** and navigate to `http://localhost:8501`
 
 ## ☁️ Cloud Deployment
 
@@ -78,6 +84,7 @@ The application is optimized for easy deployment on Streamlit Cloud:
 6. **Deploy!** 🚀
 
 The `streamlit_app.py` file is specifically designed for cloud deployment with:
+
 - **Smart Model Loading**: Automatically loads the trained model or falls back to demo mode
 - **Dataset Fallbacks**: Multiple fallback options including sample data generation
 - **Optimized Dependencies**: Cloud-friendly requirements and configurations
@@ -144,12 +151,14 @@ health-prediction-app/
 ## 🎯 How It Works
 
 1. **Data Input**: Enter restaurant inspection details including:
+
    - Inspection type and date
    - Critical violations flag
    - Violation codes
    - Inspection score
 
 2. **AI Analysis**: The machine learning model analyzes patterns from:
+
    - 67,000+ historical inspection records
    - 7 key features including temporal patterns
    - Weighted class balancing for accurate predictions
@@ -161,11 +170,11 @@ health-prediction-app/
 
 ## 📈 Grade System
 
-| Grade | Score Range | Description |
-|-------|-------------|-------------|
-| **A** | 0-13 points | Excellent compliance with health codes |
-| **B** | 14-27 points | Good compliance with minor violations |
-| **C** | 28+ points | Significant violations requiring attention |
+| Grade | Score Range  | Description                                |
+| ----- | ------------ | ------------------------------------------ |
+| **A** | 0-13 points  | Excellent compliance with health codes     |
+| **B** | 14-27 points | Good compliance with minor violations      |
+| **C** | 28+ points   | Significant violations requiring attention |
 
 ## 🛠️ Technology Stack
 
@@ -179,12 +188,14 @@ health-prediction-app/
 ## 📊 Key Features
 
 ### Machine Learning Model
+
 - **Algorithm**: Random Forest Classifier
 - **Features**: 7 engineered features including temporal data
 - **Preprocessing**: Label encoding, standard scaling
 - **Validation**: Cross-validation with balanced sampling
 
 ### Web Application
+
 - **Modern UI**: Clean, professional interface
 - **Real-time Predictions**: Instant grade predictions
 - **Interactive Charts**: Dynamic visualizations
@@ -194,6 +205,7 @@ health-prediction-app/
 ## 🔧 Usage Examples
 
 ### Basic Prediction
+
 ```python
 # Example inspection data
 inspection_data = {
@@ -212,6 +224,7 @@ confidence = model.predict_proba(processed_data)
 ```
 
 ### Running Different App Versions
+
 ```bash
 # Modern interface (recommended)
 streamlit run src/modern_app.py

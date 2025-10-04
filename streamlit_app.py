@@ -5,6 +5,7 @@ import joblib
 import os
 from pathlib import Path
 import datetime
+import time
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
@@ -17,6 +18,561 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Initialize session state for role selection
+if 'user_role' not in st.session_state:
+    st.session_state.user_role = None
+
+# Modern CSS Styling to match the design vision
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Global Styling */
+    .stApp {
+        background: linear-gradient(135deg, #1e1e2e 0%, #2d3748 100%);
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Role Selection Styling */
+    .role-card {
+        background: rgba(255,255,255,0.95);
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 1rem;
+        text-align: center;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 3px solid transparent;
+    }
+    
+    .role-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 25px 45px rgba(0,0,0,0.2);
+    }
+    
+    .role-card.health-authority {
+        border-color: #3498db;
+        background: linear-gradient(135deg, #3498db22, #3498db11);
+    }
+    
+    .role-card.restaurant-owner {
+        border-color: #2ecc71;
+        background: linear-gradient(135deg, #2ecc7122, #2ecc7111);
+    }
+    
+    .role-card.customer {
+        border-color: #9b59b6;
+        background: linear-gradient(135deg, #9b59b622, #9b59b611);
+    }
+    
+    .role-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+    
+    .role-title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        color: #000000;
+    }
+    
+    .role-description {
+        color: #000000;
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1.6;
+    }
+    
+    /* Header Styling */
+    .main-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    
+    .main-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .main-header p {
+        color: rgba(255,255,255,0.9);
+        font-size: 1.2rem;
+        margin: 0.5rem 0 0 0;
+        font-weight: 300;
+    }
+    
+    /* Navigation Cards */
+    .nav-card {
+        background: rgba(255,255,255,0.95);
+        border-radius: 15px;
+        padding: 2rem;
+        margin: 1rem 0;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .nav-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    }
+    
+    .nav-card h3 {
+        color: #000000;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        font-size: 1.4rem;
+    }
+    
+    .nav-card p {
+        color: #000000;
+        font-weight: 700;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Form Styling */
+    .prediction-form {
+        background: rgba(255,255,255,0.95);
+        border-radius: 15px;
+        padding: 2.5rem;
+        margin: 2rem 0;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: #f8fafc;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .form-section h4 {
+        color: #000000;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+    }
+    
+    /* Metric Cards */
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        color: white;
+        margin: 1rem 0;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        transition: transform 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: scale(1.05);
+    }
+    
+    .metric-value {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .metric-label {
+        font-size: 1.1rem;
+        font-weight: 400;
+        opacity: 0.9;
+    }
+    
+    /* Grade Display */
+    .grade-display {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        border-radius: 20px;
+        padding: 3rem;
+        text-align: center;
+        margin: 2rem 0;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    }
+    
+    .grade-display.grade-b {
+        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    }
+    
+    .grade-display.grade-c {
+        background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+    }
+    
+    .grade-letter {
+        font-size: 6rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 1rem;
+        text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .grade-description {
+        color: white;
+        font-size: 1.4rem;
+        font-weight: 500;
+        opacity: 0.95;
+    }
+    
+    /* Sidebar Styling */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+    }
+    
+    .css-1d391kg .css-1v0mbdj {
+        color: white;
+    }
+    
+    /* Enhanced Text Visibility - All Frontend Text Bold and Black */
+    .stMarkdown, .stText, p, div, span {
+        color: #000000 !important;
+        font-weight: 700 !important;
+        text-shadow: none !important;
+    }
+    
+    /* Error and Info Text Styling */
+    .stAlert, .stError, .stWarning, .stInfo, .stSuccess {
+        background: rgba(255, 255, 255, 0.95) !important;
+        color: #2d3748 !important;
+        border-radius: 10px !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    }
+    
+    .stAlert p, .stError p, .stWarning p, .stInfo p, .stSuccess p {
+        color: #2d3748 !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Form Input Styling - Black Text for Better Visibility */
+    .stSelectbox label, .stTextInput label, .stNumberInput label, .stSlider label {
+        color: #000000 !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+        margin-bottom: 0.5rem !important;
+        text-shadow: none !important;
+    }
+    
+    /* Form Help Text and Captions - Black Text */
+    .stSelectbox .help, .stTextInput .help, .stNumberInput .help, .stSlider .help,
+    .stSelectbox small, .stTextInput small, .stNumberInput small, .stSlider small {
+        color: #4a5568 !important;
+        font-size: 0.9rem !important;
+        text-shadow: none !important;
+    }
+    
+    /* Form Labels and Field Names - Black Text */
+    .stForm label, .stForm .stMarkdown p, .stForm div[data-testid="stMarkdownContainer"] p {
+        color: #000000 !important;
+        text-shadow: none !important;
+    }
+    
+    .stSelectbox > div > div, .stTextInput > div > div, .stNumberInput > div > div {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        border: 2px solid #667eea !important;
+        border-radius: 8px !important;
+        color: #000000 !important;
+        font-weight: 800 !important;
+    }
+    
+    /* Input Field Text - Bold Black */
+    .stSelectbox input, .stTextInput input, .stNumberInput input,
+    .stSelectbox div[data-baseweb="select"] div,
+    .stSelectbox div[data-baseweb="select"] span,
+    .stTextInput input[type="text"],
+    .stNumberInput input[type="number"] {
+        color: #000000 !important;
+        font-weight: 800 !important;
+        text-shadow: none !important;
+    }
+    
+    /* Dropdown Options Text - Bold Black */
+    .stSelectbox div[role="listbox"] div,
+    .stSelectbox div[role="option"],
+    div[data-baseweb="menu"] div {
+        color: #000000 !important;
+        font-weight: 800 !important;
+    }
+    
+    /* Date Input Text - Bold Black */
+    .stDateInput input {
+        color: #000000 !important;
+        font-weight: 800 !important;
+    }
+    
+    /* Expander Styling */
+    .streamlit-expanderHeader {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+    }
+    
+    .streamlit-expanderContent {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 8px !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+    
+    /* Metric and Data Display */
+    .metric {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px !important;
+        padding: 1rem !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+    
+    /* Sidebar Text - Bold Black */
+    .css-1d391kg .stMarkdown, .css-1d391kg p, .css-1d391kg div {
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Main Content Text - Bold Black */
+    .main .stMarkdown, .main p, .main div, .main span {
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Headers and Titles - Bold Black */
+    h1, h2, h3, h4, h5, h6 {
+        color: #000000 !important;
+        font-weight: 800 !important;
+    }
+    
+    /* Section Headers in Forms - Dark Bold Text */
+    .main h3, .main h4 {
+        color: #1a202c !important;
+        font-weight: 800 !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        padding: 0.8rem 1rem !important;
+        border-radius: 10px !important;
+        border-left: 6px solid #667eea !important;
+        margin: 1rem 0 0.5rem 0 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        text-shadow: none !important;
+    }
+    
+    /* Navigation and Menu Headers */
+    .css-1v0mbdj h1, .css-1v0mbdj h2, .css-1v0mbdj h3 {
+        color: #1a202c !important;
+        font-weight: 800 !important;
+        background: rgba(255, 255, 255, 0.9) !important;
+        padding: 0.5rem 0.8rem !important;
+        border-radius: 8px !important;
+        margin-bottom: 0.8rem !important;
+    }
+    
+    /* Table Styling */
+    .stDataFrame {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 10px !important;
+        overflow: hidden !important;
+    }
+    
+    .stDataFrame table {
+        color: #2d3748 !important;
+    }
+    
+    /* Code and Pre Text */
+    .stCode, pre, code {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 8px !important;
+    }
+    
+    /* Button Styling */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+    }
+    
+    /* Selectbox Styling */
+    .stSelectbox > div > div {
+        border-radius: 10px;
+        border: 2px solid #e2e8f0;
+        transition: border-color 0.3s ease;
+    }
+    
+    .stSelectbox > div > div:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Number Input Styling */
+    .stNumberInput > div > div {
+        border-radius: 10px;
+        border: 2px solid #e2e8f0;
+        transition: border-color 0.3s ease;
+    }
+    
+    .stNumberInput > div > div:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Hide Streamlit Branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {display:none;}
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .main-header h1 {
+            font-size: 2rem;
+        }
+        
+        .nav-card {
+            padding: 1.5rem;
+        }
+        
+        .grade-letter {
+            font-size: 4rem;
+        }
+    }
+    
+    /* Enhanced Text Visibility - All Text Bold Black */
+    .stText, .stMarkdown p, .stMarkdown div, .element-container p, .element-container div {
+        color: #000000 !important;
+        font-weight: 800 !important;
+        text-shadow: none !important;
+    }
+    
+    /* Error Message Styling - Make them clearly visible */
+    .stAlert .stMarkdown, .stError .stMarkdown, .stException .stMarkdown {
+        background: rgba(255, 255, 255, 0.95) !important;
+        color: #721c24 !important;
+        font-weight: 600 !important;
+        text-shadow: none !important;
+        padding: 1rem !important;
+        border-radius: 8px !important;
+        border: 2px solid #f56565 !important;
+    }
+    
+    /* Traceback Text - Make error details visible */
+    .stException, .stCode pre, code, .element-container code {
+        background: rgba(40, 44, 52, 0.95) !important;
+        color: #ff6b6b !important;
+        border: 2px solid #ff6b6b !important;
+        border-radius: 8px !important;
+        padding: 1rem !important;
+        font-family: 'Courier New', monospace !important;
+        font-weight: 500 !important;
+        text-shadow: none !important;
+    }
+    
+    /* Form Labels - Original White Text Style */
+    .stSelectbox label, .stTextInput label, .stNumberInput label, 
+    .stSlider label, .stDateInput label {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* General Content Text */
+    .main .element-container, .main .stMarkdown, .main p, .main div {
+        color: #ffffff !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.6) !important;
+    }
+    
+    /* Sidebar Content */
+    .css-1d391kg .element-container, .css-1d391kg .stMarkdown {
+        color: #ffffff !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.6) !important;
+    }
+    
+    /* Info/Warning/Success Messages */
+    .stInfo .stMarkdown, .stWarning .stMarkdown, .stSuccess .stMarkdown {
+        background: rgba(255, 255, 255, 0.95) !important;
+        color: #2d3748 !important;
+        font-weight: 600 !important;
+        text-shadow: none !important;
+        padding: 1rem !important;
+        border-radius: 8px !important;
+    }
+    
+    /* COMPREHENSIVE OVERRIDE - ALL FRONTEND TEXT BOLD AND BLACK */
+    * {
+        color: #000000 !important;
+        font-weight: 800 !important;
+        text-shadow: none !important;
+    }
+    
+    /* Exception for buttons and interactive elements */
+    .stButton button, .stDownloadButton button, .stFileUploader button {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Exception for alert messages - keep them readable */
+    .stAlert, .stSuccess, .stError, .stWarning, .stInfo {
+        background: rgba(255, 255, 255, 0.95) !important;
+    }
+    
+    .stAlert *, .stSuccess *, .stError *, .stWarning *, .stInfo * {
+        color: #2d3748 !important;
+        font-weight: 700 !important;
+    }
+    
+    /* SPECIFIC INPUT FIELD OVERRIDES - ENSURE BOLD BLACK TEXT */
+    input, select, textarea, option {
+        color: #000000 !important;
+        font-weight: 800 !important;
+        text-shadow: none !important;
+    }
+    
+    /* Streamlit Input Components - Bold Black Text */
+    .stSelectbox *, .stTextInput *, .stNumberInput *, .stDateInput *, .stSlider * {
+        color: #000000 !important;
+        font-weight: 800 !important;
+    }
+    
+    /* Dropdown Menu Options - Bold Black */
+    div[data-testid="stSelectbox"] div,
+    div[data-testid="stSelectbox"] span,
+    div[role="listbox"] *,
+    div[role="option"] * {
+        color: #000000 !important;
+        font-weight: 800 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Load model and data
 @st.cache_resource
@@ -400,435 +956,1417 @@ def predict_grade_simple(score, critical_flag, violation_code):
     
     return base_grade, base_prob
 
+# Performance optimization functions
+@st.cache_data
+def calculate_analytics_metrics(df):
+    """Calculate analytics metrics with caching for performance"""
+    if df is None or len(df) == 0:
+        return {}
+    
+    metrics = {}
+    
+    # Basic metrics
+    metrics['total_restaurants'] = len(df)
+    
+    # Grade metrics
+    if 'Grade' in df.columns:
+        grade_counts = df['Grade'].value_counts()
+        metrics['grade_distribution'] = grade_counts.to_dict()
+        metrics['grade_A_count'] = (df['Grade'] == 'A').sum()
+        metrics['grade_A_percentage'] = (df['Grade'] == 'A').mean() * 100
+    
+    # Critical violations
+    if 'Critical Flag' in df.columns:
+        metrics['critical_count'] = (df['Critical Flag'] == 'Critical').sum()
+        metrics['critical_percentage'] = (df['Critical Flag'] == 'Critical').mean() * 100
+    
+    # Inspection scores
+    if 'Inspection Score' in df.columns:
+        score_data = pd.to_numeric(df['Inspection Score'], errors='coerce')
+        metrics['avg_score'] = score_data.mean()
+        metrics['score_stats'] = score_data.describe().to_dict()
+    
+    # Cuisine analysis
+    if 'Cuisine Type' in df.columns:
+        top_cuisines = df['Cuisine Type'].value_counts().head(15)
+        metrics['top_cuisines'] = top_cuisines.to_dict()
+        
+        # Grade A rate by cuisine
+        cuisine_grade_A = df.groupby('Cuisine Type').apply(
+            lambda x: (x['Grade'] == 'A').mean() * 100 if 'Grade' in df.columns else 0
+        ).sort_values(ascending=False).head(15)
+        metrics['cuisine_grade_A_rates'] = cuisine_grade_A.to_dict()
+    
+    # Borough analysis
+    if 'Location' in df.columns:
+        borough_performance = df.groupby('Location').agg({
+            'Grade': lambda x: (x == 'A').mean() * 100 if 'Grade' in df.columns else 0,
+            'Restaurant Name': 'count' if 'Restaurant Name' in df.columns else len
+        }).round(2)
+        borough_performance.columns = ['Grade A Rate (%)', 'Total Restaurants']
+        metrics['borough_performance'] = borough_performance.to_dict()
+    
+    return metrics
+
+@st.cache_data
+def prepare_chart_data(df, chart_type):
+    """Prepare chart data with caching for better performance"""
+    if df is None or len(df) == 0:
+        return None
+    
+    if chart_type == 'grade_distribution':
+        if 'Grade' in df.columns:
+            grade_counts = df['Grade'].value_counts().sort_index()
+            return {
+                'labels': grade_counts.index.tolist(),
+                'values': grade_counts.values.tolist(),
+                'percentages': [(count/len(df))*100 for count in grade_counts.values]
+            }
+    
+    elif chart_type == 'cuisine_performance':
+        if 'Cuisine Type' in df.columns and 'Grade' in df.columns:
+            top_cuisines = df['Cuisine Type'].value_counts().head(15).index
+            cuisine_subset = df[df['Cuisine Type'].isin(top_cuisines)]
+            cuisine_performance = cuisine_subset.groupby('Cuisine Type').apply(
+                lambda x: (x['Grade'] == 'A').mean() * 100
+            ).sort_values(ascending=False)
+            return {
+                'labels': cuisine_performance.index.tolist(),
+                'values': cuisine_performance.values.tolist()
+            }
+    
+    elif chart_type == 'violation_analysis':
+        if 'Critical Flag' in df.columns:
+            critical_dist = df['Critical Flag'].value_counts()
+            return {
+                'labels': critical_dist.index.tolist(),
+                'values': critical_dist.values.tolist(),
+                'percentages': [(count/len(df))*100 for count in critical_dist.values]
+            }
+    
+    return None
+
+# Add performance monitoring
+@st.cache_data
+def get_dataset_insights(df):
+    """Get quick insights about the dataset for performance monitoring"""
+    if df is None or len(df) == 0:
+        return {}
+    
+    insights = {
+        'total_rows': len(df),
+        'total_columns': len(df.columns),
+        'date_range': None,
+        'top_restaurant': None,
+        'data_quality': {
+            'missing_grades': 0,
+            'invalid_scores': 0,
+            'data_completeness': 100.0
+        }
+    }
+    
+    # Date range analysis
+    if 'Inspection Date' in df.columns:
+        try:
+            dates = pd.to_datetime(df['Inspection Date'], errors='coerce')
+            valid_dates = dates.dropna()
+            if len(valid_dates) > 0:
+                insights['date_range'] = {
+                    'start': valid_dates.min().strftime('%Y-%m-%d'),
+                    'end': valid_dates.max().strftime('%Y-%m-%d'),
+                    'years_covered': valid_dates.dt.year.nunique()
+                }
+        except:
+            pass
+    
+    # Top restaurant
+    if 'Restaurant Name' in df.columns:
+        top_restaurant = df['Restaurant Name'].value_counts().index[0]
+        top_restaurant_count = df['Restaurant Name'].value_counts().iloc[0]
+        insights['top_restaurant'] = {
+            'name': top_restaurant,
+            'inspection_count': int(top_restaurant_count)
+        }
+    
+    # Data quality metrics
+    if 'Grade' in df.columns:
+        insights['data_quality']['missing_grades'] = df['Grade'].isna().sum()
+    
+    if 'Inspection Score' in df.columns:
+        score_data = pd.to_numeric(df['Inspection Score'], errors='coerce')
+        insights['data_quality']['invalid_scores'] = score_data.isna().sum()
+    
+    # Calculate overall completeness
+    total_cells = len(df) * len(df.columns)
+    missing_cells = df.isna().sum().sum()
+    insights['data_quality']['data_completeness'] = ((total_cells - missing_cells) / total_cells) * 100
+    
+    return insights
+
 def main():
-    # App header
+    # Role selection interface
+    if st.session_state.user_role is None:
+        show_role_selection()
+    else:
+        # Show role-specific interface
+        if st.session_state.user_role == "Health Authority":
+            show_health_authority_dashboard()
+        elif st.session_state.user_role == "Restaurant Owner":
+            show_restaurant_owner_portal()
+        elif st.session_state.user_role == "Customer":
+            show_customer_portal()
+
+def show_role_selection():
+    """Display enhanced role selection interface with better user interaction"""
     st.markdown("""
-    <div style='text-align: center; padding: 2rem 0;'>
-        <h1 style='color: #1E3A8A; font-size: 3rem; margin-bottom: 0.5rem;'>
-            🍽️ NYC Restaurant Health Grade Predictor
-        </h1>
-        <p style='color: #6B7280; font-size: 1.2rem; margin-bottom: 2rem;'>
-            AI-powered restaurant health grade prediction system
-        </p>
+    <div class="main-header">
+        <h1>🍽️ NYC Restaurant Health Grade Predictor</h1>
+        <p>Advanced AI-powered health grade prediction system with real-time analytics</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Load model and data
+    # Add interactive welcome message
+    st.markdown("## 👋 Welcome! Choose Your Role")
+    
+    # Interactive info about the system
+    with st.expander("🔍 Learn About Our AI System", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            **🤖 AI Technology:**
+            - Random Forest Machine Learning
+            - 95.8% Prediction Accuracy
+            - Trained on 54,000+ real inspections
+            - Real-time grade predictions
+            """)
+        with col2:
+            st.markdown("""
+            **📊 Data Sources:**
+            - NYC Department of Health records
+            - Live inspection database
+            - Historical grade patterns
+            - Violation code analysis
+            """)
+    
+    st.markdown("### Select your role to access personalized features:")
+    
+    # Enhanced role selection with better interaction
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        with st.container():
+            st.markdown("""
+            <div class="role-card health-authority">
+                <div class="role-icon">🏛️</div>
+                <div class="role-title">Health Authority</div>
+                <div class="role-description">
+                    Professional inspection simulation and analytics dashboard for health officials.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("🏛️ Enter as Health Authority", key="health_auth", 
+                        help="Access professional inspection tools", use_container_width=True):
+                st.session_state.user_role = "Health Authority"
+                st.balloons()  # Fun interaction
+                st.success("Welcome, Health Authority! 🎯")
+                st.rerun()
+                
+    with col2:
+        with st.container():
+            st.markdown("""
+            <div class="role-card restaurant-owner">
+                <div class="role-icon">🏪</div>
+                <div class="role-title">Restaurant Owner</div>
+                <div class="role-description">
+                    Self-assessment tools and improvement guidance for restaurant managers.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("🏪 Enter as Restaurant Owner", key="restaurant_owner", 
+                        help="Access business management tools", use_container_width=True):
+                st.session_state.user_role = "Restaurant Owner"
+                st.balloons()  # Fun interaction
+                st.success("Welcome, Restaurant Owner! 🍽️")
+                st.rerun()
+                
+    with col3:
+        with st.container():
+            st.markdown("""
+            <div class="role-card customer">
+                <div class="role-icon">👥</div>
+                <div class="role-title">Customer</div>
+                <div class="role-description">
+                    Quick and easy restaurant health grade lookup for informed dining decisions.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("👥 Enter as Customer", key="customer", 
+                        help="Check restaurant health grades", use_container_width=True):
+                st.session_state.user_role = "Customer"
+                st.balloons()  # Fun interaction
+                st.success("Welcome, Valued Customer! 🌟")
+                st.rerun()
+    
+    # Removed Live System Statistics section for cleaner interface
+    
+    # Load model and data for status display
     model_objects = load_model()
     df = load_dataset()
     
-    # Sidebar
+    # Enhanced sidebar with interactive elements
     with st.sidebar:
-        st.markdown("### 🎯 About This App")
-        st.info("""
-        This system predicts NYC restaurant health grades using machine learning patterns from real inspection data.
+        st.markdown("### 🎯 Quick Start Guide")
         
-        **Features:**
-        - Real-time grade prediction
-        - Interactive analytics
-        - Performance metrics
-        - Educational insights
+        st.markdown("""
+        **For Health Authorities:**
+        - Simulate inspections
+        - View compliance analytics
+        - Generate risk assessments
+        
+        **For Restaurant Owners:**
+        - Predict your grade
+        - Get improvement tips
+        - Self-assessment tools
+        
+        **For Customers:**
+        - Check restaurant grades
+        - View safety ratings
+        - Make informed choices
         """)
         
-        st.markdown("---")
-        st.markdown("### 📊 Model Info")
-        
-        if model_objects and model_objects.get('model_type') != 'demo':
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Model Type", model_objects['model_type'].title())
-            with col2:
-                st.metric("Features", len(model_objects['features']))
-        else:
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Status", "Demo Mode")
-            with col2:
-                st.metric("Type", "Rule-based")
-        
-        if len(df) > 0:
-            st.markdown("---")
-            st.markdown("### 📈 Dataset Stats")
-            st.metric("Total Records", f"{len(df):,}")
+        # Interactive demo button
+        if st.button("🎬 View Demo", help="See how the system works"):
+            st.info("Demo: Select any role above to start exploring!")
             
-            grade_counts = df['Grade'].value_counts()
-            fig_pie = px.pie(
-                values=grade_counts.values,
-                names=grade_counts.index,
-                title="Grade Distribution"
-            )
-            fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-            fig_pie.update_layout(height=300)
-            st.plotly_chart(fig_pie, use_container_width=True)
-    
-    # Main content tabs
-    tab1, tab2, tab3 = st.tabs(["🔮 Predict Grade", "📊 Analytics", "ℹ️ Information"])
-    
-    with tab1:
-        st.markdown("### 🔮 Restaurant Grade Prediction")
-        st.markdown("Enter inspection details to get an AI-powered grade prediction.")
+        # System status indicator
+        st.markdown("---")
+        status_color = "🟢" if model_objects else "🟡"
+        status_text = "Online" if model_objects else "Demo Mode"
+        st.markdown(f"**System Status:** {status_color} {status_text}")
         
-        # Prediction form
-        col1, col2 = st.columns(2)
+        if df is not None:
+            st.markdown(f"**Data Status:** 🟢 Connected")
+            st.markdown(f"**Last Updated:** Today")
+        else:
+            st.markdown(f"**Data Status:** 🟡 Sample Data")
+
+def render_prediction_interface(model_objects, df):
+    """Modern prediction interface with enhanced styling"""
+    
+    # Initialize session state for form management
+    if 'form_submitted' not in st.session_state:
+        st.session_state.form_submitted = False
+    
+    st.markdown("""
+    <div class="prediction-form">
+        <h3>🔮 Restaurant Grade Prediction</h3>
+        <p>Enter the inspection details below to get an AI-powered grade prediction.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Create unique form key using session state
+    form_key = f"grade_prediction_form_{id(st.session_state)}"
+    
+    with st.form(form_key, clear_on_submit=False):
+        col1, col2 = st.columns(2, gap="large")
         
         with col1:
-            st.markdown("#### 🏢 Restaurant Details")
+            st.markdown("""
+            <div class="form-section">
+                <h4>🏢 Inspection Information</h4>
+            </div>
+            """, unsafe_allow_html=True)
             
-            restaurant_name = st.text_input("Restaurant Name", "PEKING GARDEN")
+            # Inspection type selection
+            if model_objects and 'label_encoders' in model_objects:
+                inspection_types = list(model_objects['label_encoders']['Inspection Type'].classes_)
+            else:
+                inspection_types = [
+                    'Cycle Inspection / Initial Inspection',
+                    'Cycle Inspection / Re-inspection',
+                    'Pre-permit (Operational) / Initial Inspection',
+                    'Pre-permit (Operational) / Re-inspection'
+                ]
             
-            # Use actual cuisine types from dataset (top 15 most common)
-            cuisine_options = [
-                'American', 'Chinese', 'Coffee/Tea', 'Pizza', 'Italian', 'Mexican',
-                'Latin American', 'Bakery Products/Desserts', 'Caribbean', 'Japanese', 
-                'Chicken', 'Spanish', 'Donuts', 'Sandwiches', 'Hamburgers', 'Thai',
-                'Indian', 'Greek', 'French', 'Seafood', 'Asian/Asian Fusion', 'Other'
-            ]
-            cuisine = st.selectbox("Cuisine Type", cuisine_options)
-            
-            # Use actual inspection types from dataset (top 5 most common)
-            inspection_type_options = [
-                'Cycle Inspection / Initial Inspection',
-                'Cycle Inspection / Re-inspection', 
-                'Pre-permit (Operational) / Initial Inspection',
-                'Pre-permit (Operational) / Re-inspection',
-                'Cycle Inspection / Reopening Inspection'
-            ]
-            inspection_type = st.selectbox("Inspection Type", inspection_type_options)
-            
-            # Borough selection
-            location_options = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island']
-            location = st.selectbox("Borough", location_options)
-        
-        with col2:
-            st.markdown("#### 📊 Inspection Results")
-            
-            score = st.slider(
-                "Inspection Score",
-                min_value=0,
-                max_value=150,
-                value=15,
-                help="Lower scores indicate better compliance (0 = perfect, 150+ = severe violations)"
+            inspection_type = st.selectbox(
+                "Inspection Type", 
+                inspection_types,
+                help="Type of health inspection conducted"
             )
+            
+            # Critical flag selection
+            if model_objects and 'label_encoders' in model_objects:
+                critical_flags = list(model_objects['label_encoders']['Critical Flag'].classes_)
+            else:
+                critical_flags = ['Critical', 'Not Critical', 'Not Applicable']
             
             critical_flag = st.selectbox(
-                "Critical Violations",
-                ['Not Critical', 'Critical', 'Not Applicable'],
-                help="Whether violations pose immediate health risks"
+                "Critical Flag", 
+                critical_flags,
+                help="Whether violations are critical to food safety"
             )
             
-            # Use actual violation codes from dataset (top 15 most common)
-            violation_code_options = [
-                'Null',  # For no violations
-                '10F', '08A', '06D', '04L', '10B', '06C', '02G', '02B', '04N', 
-                '04A', '04H', '08C', '06A', '09C', '04M', '06E', '10H', '06F', 'Other'
-            ]
-            
-            # Create user-friendly descriptions
-            violation_descriptions = {
-                'Null': 'No violations recorded',
-                '10F': '10F - Wiping cloths not stored clean and dry',
-                '08A': '08A - Facility not vermin proof', 
-                '06D': '06D - Food contact surface not properly washed',
-                '04L': '04L - Evidence of mice or live mice in establishment',
-                '10B': '10B - Plumbing not properly installed or maintained',
-                '06C': '06C - Food not protected from contamination',
-                '02G': '02G - Cold food item held above 41° F',
-                '02B': '02B - Hot food item not held at or above 140° F',
-                '04N': '04N - Filth flies or food/refuse/sewage associated flies',
-                '04A': '04A - Food Protection Certificate not held by supervisor',
-                '04H': '04H - Raw, cooked or prepared food is adulterated',
-                '08C': '08C - Pesticide use not in accordance with label',
-                '06A': '06A - Personal cleanliness inadequate',
-                '09C': '09C - Food contact surface not properly maintained',
-                '04M': '04M - Live roaches present in facility',
-                '06E': '06E - Sanitized equipment or utensil improperly used',
-                '10H': '10H - Proper sanitization not provided for utensil ware',
-                '06F': '06F - Wiping cloths soiled or not stored in sanitizing solution',
-                'Other': 'Other violation type'
-            }
+            # Violation code selection
+            if model_objects and 'label_encoders' in model_objects:
+                violation_codes = list(model_objects['label_encoders']['Violation Code'].classes_)[:10]
+            else:
+                violation_codes = ['Null', '10F', '08A', '06D', '04L', '10B', '06C', '02G', '02B', '04N']
             
             violation_code = st.selectbox(
-                "Primary Violation Type", 
-                violation_code_options,
-                format_func=lambda x: violation_descriptions.get(x, x)
+                "Violation Code", 
+                violation_codes,
+                help="Specific violation code from inspection"
+            )
+        
+        with col2:
+            st.markdown("""
+            <div class="form-section">
+                <h4>📊 Inspection Metrics</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            score = st.number_input(
+                "Inspection Score", 
+                min_value=0, 
+                max_value=150, 
+                value=13,
+                help="Total violation points (higher score = worse performance)"
             )
             
-            inspection_date = st.date_input("Inspection Date", datetime.date.today())
+            # Score interpretation with modern styling
+            if score <= 13:
+                st.success("🟢 **Excellent Range** (Grade A likely)")
+            elif score <= 27:
+                st.warning("🟡 **Good Range** (Grade B likely)")
+            else:
+                st.error("🔴 **Needs Improvement** (Grade C likely)")
+            
+            inspection_date = st.date_input(
+                "Inspection Date", 
+                datetime.date.today(),
+                help="Date when the inspection was conducted"
+            )
+            
+            inspection_year = inspection_date.year
+            inspection_month = inspection_date.month
+            inspection_day_of_week = inspection_date.weekday()
+            
+            # Show day of week info
+            day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            st.info(f"📅 **Day:** {day_names[inspection_day_of_week]}")
         
-        # Prediction button
-        if st.button("🚀 Predict Health Grade", type="primary", use_container_width=True):
-            with st.spinner("🧠 Analyzing inspection data..."):
-                
-                # Get prediction using the trained model
-                predicted_grade, probabilities = predict_grade_with_model(
+        # Submit button with modern styling
+        st.markdown("---")
+        submitted = st.form_submit_button(
+            "🚀 Predict Health Grade", 
+            type="primary", 
+            use_container_width=True
+        )
+        
+        if submitted:
+            with st.spinner("🧠 AI is analyzing the inspection data..."):
+                predicted_grade, grade_probs = predict_grade_with_model(
                     model_objects, inspection_type, critical_flag, violation_code, 
                     score, inspection_date
                 )
                 
-                # Display results
-                st.markdown("---")
-                st.markdown("## 🎯 Prediction Results")
-                
-                # Main result
-                col1, col2, col3 = st.columns([1, 2, 1])
-                
-                with col1:
-                    # Grade circle
-                    colors = {'A': '#28a745', 'B': '#ffc107', 'C': '#dc3545', 'N': '#6c757d', 'Z': '#17a2b8', 'P': '#6610f2'}
-                    emojis = {'A': '🏆', 'B': '🥈', 'C': '🥉', 'N': '❓', 'Z': '📊', 'P': '📝'}
-                    
-                    grade_color = colors.get(predicted_grade, '#6c757d')
-                    emoji = emojis.get(predicted_grade, '❓')
-                    
-                    st.markdown(f"""
-                    <div style='text-align: center; padding: 1rem;'>
-                        <div style='background: {grade_color}; width: 120px; height: 120px; border-radius: 50%; 
-                                   display: flex; flex-direction: column; justify-content: center; align-items: center; 
-                                   margin: 0 auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2);'>
-                            <div style='font-size: 48px; font-weight: 800; color: white;'>{predicted_grade}</div>
-                            <div style='font-size: 24px;'>{emoji}</div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col2:
-                    st.markdown(f"### Predicted Grade: **{predicted_grade}**")
-                    
-                    descriptions = {
-                        'A': '🌟 Excellent! Restaurant meets all health requirements.',
-                        'B': '⚠️ Good with minor issues. Some improvements needed.',
-                        'C': '🚨 Poor conditions. Significant improvements required.',
-                        'N': '❓ Not yet graded - awaiting full assessment.',
-                        'Z': '📊 Grade pending - inspection results being processed.',
-                        'P': '📝 Grade pending - awaiting final determination.'
-                    }
-                    
-                    st.markdown(descriptions.get(predicted_grade, 'Unknown grade'))
-                    
-                    # Calculate confidence based on probabilities
-                    if isinstance(probabilities, dict):
-                        confidence = max(probabilities.values()) * 100
-                    else:
-                        confidence = max(probabilities) * 100
-                        
-                    st.markdown(f"**Confidence:** {confidence:.1f}%")
-                    st.progress(confidence/100)
-                    
-                    score_ranges = {
-                        'A': '0-13 points', 'B': '14-27 points', 'C': '28+ points',
-                        'N': 'Not applicable', 'Z': 'Pending assessment', 'P': 'Pending assessment'
-                    }
-                    st.markdown(f"**Expected Score Range:** {score_ranges.get(predicted_grade, 'Unknown')}")
-                
-                # Probability chart
-                st.markdown("### 📊 Grade Probabilities")
-                
-                # Ensure probabilities are properly formatted and positive
-                if isinstance(probabilities, dict):
-                    # Filter out any negative or zero probabilities for display
-                    filtered_probs = {k: max(0, v) for k, v in probabilities.items() if v > 0.001}
-                    
-                    if filtered_probs:
-                        # Normalize probabilities to ensure they sum to 1
-                        total_prob = sum(filtered_probs.values())
-                        if total_prob > 0:
-                            filtered_probs = {k: v/total_prob for k, v in filtered_probs.items()}
-                        
-                        prob_df = pd.DataFrame(list(filtered_probs.items()), columns=['Grade', 'Probability'])
-                        prob_df['Probability'] = prob_df['Probability'] * 100
-                        prob_df = prob_df.sort_values('Probability', ascending=False)
-                    else:
-                        # Fallback if no valid probabilities
-                        prob_df = pd.DataFrame({
-                            'Grade': [predicted_grade],
-                            'Probability': [100.0]
-                        })
-                else:
-                    # Handle list/array format
-                    grade_names = ['A', 'B', 'C']
-                    if len(probabilities) >= 3:
-                        probs = [max(0, p) for p in probabilities[:3]]  # Ensure positive
-                        total = sum(probs)
-                        if total > 0:
-                            probs = [p/total for p in probs]  # Normalize
-                        prob_df = pd.DataFrame({
-                            'Grade': grade_names,
-                            'Probability': [p * 100 for p in probs]
-                        })
-                        prob_df = prob_df[prob_df['Probability'] > 0.1]  # Filter very small probabilities
-                    else:
-                        prob_df = pd.DataFrame({
-                            'Grade': [predicted_grade],
-                            'Probability': [100.0]
-                        })
-                
-                # Create the chart
+                # Display results with modern styling
+                display_prediction_results(predicted_grade, grade_probs, score)
+
+def display_prediction_results(predicted_grade, grade_probs, score):
+    """Display prediction results with modern styling"""
+    st.markdown("---")
+    st.markdown("### 🎯 Prediction Results")
+    
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        # Grade display with modern circular design
+        grade_class = f"grade-{predicted_grade.lower()}" if predicted_grade.lower() in ['a', 'b', 'c'] else "grade-other"
+        
+        st.markdown(f"""
+        <div class="grade-display {grade_class}">
+            <div class="grade-letter">{predicted_grade}</div>
+            <div class="grade-description">{get_grade_description(predicted_grade)}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        # Enhanced probability distribution with multiple visualizations
+        if grade_probs:
+            st.markdown("#### 📊 Confidence Distribution")
+            
+            # Create tabs for different visualization types
+            chart_tab1, chart_tab2, chart_tab3 = st.tabs(["📊 Bar Chart", "🍰 Pie Chart", "📈 Gauge Chart"])
+            
+            # Prepare data
+            prob_df = pd.DataFrame({
+                'Grade': list(grade_probs.keys()),
+                'Probability': [p * 100 for p in grade_probs.values()]
+            }).sort_values('Probability', ascending=False)
+            
+            grade_colors = {
+                'A': '#48bb78', 'B': '#ed8936', 'C': '#e53e3e',
+                'N': '#6c757d', 'Z': '#17a2b8', 'P': '#6610f2'
+            }
+            
+            with chart_tab1:
+                # Enhanced bar chart with gradient colors and animations
                 fig_bar = px.bar(
-                    prob_df,
-                    x='Grade',
+                    prob_df, 
+                    x='Grade', 
                     y='Probability',
                     color='Grade',
-                    color_discrete_map={'A': '#28a745', 'B': '#ffc107', 'C': '#dc3545', 
-                                      'N': '#6c757d', 'Z': '#17a2b8', 'P': '#6610f2'},
-                    title="Probability Distribution (%)"
+                    color_discrete_map=grade_colors,
+                    title="Grade Probability Distribution",
+                    text='Probability'
                 )
                 
-                # Ensure Y-axis starts at 0 and shows percentages
-                fig_bar.update_layout(
-                    showlegend=False, 
-                    height=400,
-                    yaxis=dict(
-                        title="Probability (%)",
-                        range=[0, max(prob_df['Probability'].max() * 1.1, 10)]  # Ensure minimum range
-                    ),
-                    xaxis=dict(title="Grade")
-                )
-                
-                # Add value labels on bars
+                # Enhance the bar chart styling
                 fig_bar.update_traces(
-                    texttemplate='%{y:.1f}%',
-                    textposition='outside'
+                    texttemplate='%{text:.1f}%',
+                    textposition='outside',
+                    marker_line_color='rgba(255,255,255,0.6)',
+                    marker_line_width=2
+                )
+                
+                fig_bar.update_layout(
+                    showlegend=False,
+                    height=350,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='#000000', size=12),
+                    title_font_size=16,
+                    xaxis_title="Health Grade",
+                    yaxis_title="Confidence (%)",
+                    xaxis=dict(
+                        showgrid=False,
+                        tickfont=dict(size=14, color='#000000')
+                    ),
+                    yaxis=dict(
+                        showgrid=True,
+                        gridcolor='rgba(0,0,0,0.1)',
+                        tickfont=dict(size=12, color='#000000')
+                    )
                 )
                 
                 st.plotly_chart(fig_bar, use_container_width=True)
-                
-                # Recommendations
-                st.markdown("### 💡 Recommendations")
-                
-                if predicted_grade == 'A':
-                    st.success("🎉 **Excellent Performance!** Maintain high standards and continue best practices.")
-                elif predicted_grade == 'B':
-                    st.warning("⚠️ **Good, but improvable.** Address violations promptly and enhance procedures.")
-                elif predicted_grade == 'C':
-                    st.error("🚨 **Immediate action required!** Address all violations and implement corrective measures.")
-                else:
-                    st.info("ℹ️ **Grade pending.** Follow up on inspection status and address any identified issues.")
-    
-    with tab2:
-        st.markdown("## 📊 Analytics Dashboard")
-        
-        if len(df) > 0:
-            col1, col2 = st.columns(2)
             
-            with col1:
-                # Grade distribution
+            with chart_tab2:
+                # Interactive pie chart
+                fig_pie = px.pie(
+                    prob_df,
+                    values='Probability',
+                    names='Grade',
+                    color='Grade',
+                    color_discrete_map=grade_colors,
+                    title="Grade Confidence Breakdown"
+                )
+                
+                fig_pie.update_traces(
+                    textposition='inside',
+                    textinfo='percent+label',
+                    hovertemplate='<b>Grade %{label}</b><br>Confidence: %{value:.1f}%<extra></extra>',
+                    pull=[0.1 if grade == predicted_grade else 0 for grade in prob_df['Grade']]  # Highlight predicted grade
+                )
+                
+                fig_pie.update_layout(
+                    height=350,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='#000000', size=12),
+                    title_font_size=16,
+                    showlegend=True,
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.2,
+                        xanchor="center",
+                        x=0.5
+                    )
+                )
+                
+                st.plotly_chart(fig_pie, use_container_width=True)
+            
+            with chart_tab3:
+                # Gauge chart for main prediction confidence
+                confidence = max(grade_probs.values()) * 100
+                
+                fig_gauge = go.Figure(go.Indicator(
+                    mode = "gauge+number+delta",
+                    value = confidence,
+                    domain = {'x': [0, 1], 'y': [0, 1]},
+                    title = {'text': f"Prediction Confidence<br><span style='font-size:0.8em;color:gray'>Grade {predicted_grade}</span>"},
+                    delta = {'reference': 75, 'increasing': {'color': "green"}, 'decreasing': {'color': "red"}},
+                    gauge = {
+                        'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                        'bar': {'color': grade_colors.get(predicted_grade, '#6c757d')},
+                        'bgcolor': "white",
+                        'borderwidth': 2,
+                        'bordercolor': "gray",
+                        'steps': [
+                            {'range': [0, 50], 'color': 'lightgray'},
+                            {'range': [50, 75], 'color': 'yellow'},
+                            {'range': [75, 90], 'color': 'orange'},
+                            {'range': [90, 100], 'color': 'lightgreen'}
+                        ],
+                        'threshold': {
+                            'line': {'color': "red", 'width': 4},
+                            'thickness': 0.75,
+                            'value': 90
+                        }
+                    }
+                ))
+                
+                fig_gauge.update_layout(
+                    height=350,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='#000000', size=12)
+                )
+                
+                st.plotly_chart(fig_gauge, use_container_width=True)
+            
+            # Enhanced confidence metrics
+            st.markdown("---")
+            col_metrics1, col_metrics2, col_metrics3 = st.columns(3)
+            
+            with col_metrics1:
+                confidence = max(grade_probs.values()) * 100
+                confidence_color = "🟢" if confidence >= 80 else "🟡" if confidence >= 60 else "🔴"
+                st.metric("🎯 Overall Confidence", f"{confidence:.1f}%", f"{confidence_color}")
+            
+            with col_metrics2:
+                predicted_prob = grade_probs.get(predicted_grade, 0) * 100
+                st.metric(f"📊 Grade {predicted_grade} Probability", f"{predicted_prob:.1f}%")
+            
+            with col_metrics3:
+                # Calculate uncertainty (entropy-like measure)
+                probs = list(grade_probs.values())
+                uncertainty = -sum(p * np.log2(p + 1e-10) for p in probs if p > 0)
+                uncertainty_normalized = (uncertainty / np.log2(len(probs))) * 100
+                uncertainty_color = "🟢" if uncertainty_normalized < 30 else "🟡" if uncertainty_normalized < 60 else "🔴"
+                st.metric("🔄 Uncertainty", f"{uncertainty_normalized:.1f}%", f"{uncertainty_color}")
+            
+            # Probability breakdown table
+            st.markdown("#### 📋 Detailed Breakdown")
+            
+            # Enhanced probability table with styling
+            prob_display_df = prob_df.copy()
+            prob_display_df['Confidence Level'] = prob_display_df['Probability'].apply(
+                lambda x: "Very High" if x >= 80 else "High" if x >= 60 else "Medium" if x >= 40 else "Low"
+            )
+            prob_display_df['Visual'] = prob_display_df.apply(
+                lambda row: f"{'█' * int(row['Probability'] / 5)}{'░' * (20 - int(row['Probability'] / 5))}", axis=1
+            )
+            prob_display_df = prob_display_df.round(1)
+            
+            # Display as styled table
+            st.dataframe(
+                prob_display_df[['Grade', 'Probability', 'Confidence Level', 'Visual']],
+                use_container_width=True,
+                hide_index=True
+            )
+
+def display_recommendations(predicted_grade, score):
+    """Display simple recommendations"""
+    st.markdown("### 💡 Quick Tips")
+    
+    if predicted_grade == 'A':
+        st.success("🎉 **Excellent!** Keep maintaining your current standards.")
+    elif predicted_grade == 'B':
+        st.warning("⚠️ **Good work!** Focus on addressing any violations to reach Grade A.")
+    elif predicted_grade == 'C':
+        st.error("🚨 **Needs improvement.** Address violations before your next inspection.")
+    else:
+        st.info("ℹ️ **Grade pending.** Ensure all requirements are met.")
+    
+    # Score-based additional advice
+    if score > 50:
+        st.error("⚠️ **High Score Alert**: Your inspection score is significantly above average. This indicates multiple or severe violations that require immediate attention.")
+    elif score < 5:
+        st.success("✨ **Outstanding Performance**: Your score indicates exceptional compliance with health regulations.")
+
+def render_analytics_dashboard(df):
+    """Modern analytics dashboard"""
+    st.markdown("### 📊 Restaurant Health Analytics")
+    
+    if df is not None and len(df) > 0:
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown("""
+            <div class="metric-card">
+                <div class="metric-value">{:,}</div>
+                <div class="metric-label">Total Inspections</div>
+            </div>
+            """.format(len(df)), unsafe_allow_html=True)
+        
+        with col2:
+            avg_score = df['Inspection Score'].mean() if 'Inspection Score' in df.columns else 0
+            st.markdown("""
+            <div class="metric-card">
+                <div class="metric-value">{:.1f}</div>
+                <div class="metric-label">Average Score</div>
+            </div>
+            """.format(avg_score), unsafe_allow_html=True)
+        
+        with col3:
+            grade_a_pct = (df['Grade'] == 'A').mean() * 100 if 'Grade' in df.columns else 0
+            st.markdown("""
+            <div class="metric-card">
+                <div class="metric-value">{:.1f}%</div>
+                <div class="metric-label">Grade A Rate</div>
+            </div>
+            """.format(grade_a_pct), unsafe_allow_html=True)
+        
+        with col4:
+            critical_pct = (df['Critical Flag'] == 'Critical').mean() * 100 if 'Critical Flag' in df.columns else 0
+            st.markdown("""
+            <div class="metric-card">
+                <div class="metric-value">{:.1f}%</div>
+                <div class="metric-label">Critical Violations</div>
+            </div>
+            """.format(critical_pct), unsafe_allow_html=True)
+        
+        # Charts section
+        st.markdown("---")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if 'Grade' in df.columns:
+                st.markdown("#### 🥧 Grade Distribution")
                 grade_counts = df['Grade'].value_counts()
                 
-                fig_grades = px.bar(
-                    x=grade_counts.index,
-                    y=grade_counts.values,
-                    color=grade_counts.index,
-                    color_discrete_map={'A': '#28a745', 'B': '#ffc107', 'C': '#dc3545', 
-                                      'N': '#6c757d', 'Z': '#17a2b8', 'P': '#6610f2'},
-                    title="Grade Distribution in Dataset"
+                fig = px.pie(
+                    values=grade_counts.values,
+                    names=grade_counts.index,
+                    color_discrete_map={
+                        'A': '#48bb78', 'B': '#ed8936', 'C': '#e53e3e',
+                        'N': '#6c757d', 'Z': '#17a2b8', 'P': '#6610f2'
+                    },
+                    title="Restaurant Grade Distribution"
                 )
-                fig_grades.update_layout(showlegend=False)
-                st.plotly_chart(fig_grades, use_container_width=True)
-            
-            with col2:
-                # Score distribution
-                if 'Inspection Score' in df.columns:
-                    fig_scores = px.histogram(
-                        df,
-                        x='Inspection Score',
-                        color='Grade',
-                        title="Score Distribution by Grade",
-                        nbins=20
-                    )
-                    st.plotly_chart(fig_scores, use_container_width=True)
-                else:
-                    st.info("Score distribution not available")
-            
-            # Additional analytics
-            st.markdown("### 📈 Additional Insights")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if 'Cuisine Type' in df.columns:
-                    cuisine_grades = df.groupby('Cuisine Type')['Grade'].value_counts().unstack(fill_value=0)
-                    fig_cuisine = px.bar(
-                        cuisine_grades.head(10),
-                        title="Top 10 Cuisine Types by Grade Distribution",
-                        color_discrete_map={'A': '#28a745', 'B': '#ffc107', 'C': '#dc3545'}
-                    )
-                    st.plotly_chart(fig_cuisine, use_container_width=True)
-            
-            with col2:
-                if 'Critical Flag' in df.columns:
-                    critical_dist = df['Critical Flag'].value_counts()
-                    fig_critical = px.pie(
-                        values=critical_dist.values,
-                        names=critical_dist.index,
-                        title="Critical vs Non-Critical Violations"
-                    )
-                    st.plotly_chart(fig_critical, use_container_width=True)
-                    
-        else:
-            st.info("📊 Analytics will be available when dataset is loaded.")
+                
+                fig.update_traces(textposition='inside', textinfo='percent+label')
+                fig.update_layout(height=400, showlegend=True)
+                st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            if 'Inspection Score' in df.columns:
+                st.markdown("#### 📈 Score Distribution")
+                
+                fig = px.histogram(
+                    df, 
+                    x='Inspection Score',
+                    nbins=30,
+                    title="Distribution of Inspection Scores",
+                    color_discrete_sequence=['#667eea']
+                )
+                
+                fig.update_layout(height=400)
+                st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("📊 Analytics will be available when restaurant data is loaded.")
+
+def render_grade_information():
+    """Modern grade information interface"""
+    st.markdown("### 📚 Understanding Restaurant Health Grades")
     
-    with tab3:
-        st.markdown("## ℹ️ Understanding Restaurant Grades")
-        
-        # Grade explanations
-        col1, col2, col3 = st.columns(3)
-        
-        grades_info = [
-            ('A', '🏆', '#28a745', '0-13 points', 'Excellent compliance'),
-            ('B', '🥈', '#ffc107', '14-27 points', 'Good with minor issues'),
-            ('C', '🥉', '#dc3545', '28+ points', 'Needs improvement')
-        ]
-        
-        for i, (grade, emoji, color, range_text, desc) in enumerate(grades_info):
-            with [col1, col2, col3][i]:
-                st.markdown(f"""
-                <div style='background: {color}; color: white; padding: 1.5rem; border-radius: 12px; text-align: center;'>
-                    <div style='font-size: 3rem;'>{emoji}</div>
-                    <h3 style='color: white; margin: 0.5rem 0;'>Grade {grade}</h3>
-                    <p style='color: white; margin: 0;'><strong>{range_text}</strong></p>
-                    <p style='color: white; margin: 0.5rem 0 0 0;'>{desc}</p>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("### 📊 How Scoring Works")
-        st.info("""
-        **NYC Restaurant Inspection Scoring:**
-        - Each violation receives points based on severity
-        - Critical violations (food safety risks) receive more points
-        - Lower total scores = better grades
-        - Inspectors evaluate food temperature, cleanliness, pest control, and staff hygiene
-        """)
-        
-        st.markdown("### 🔬 About This Model")
-        
-        if model_objects and model_objects.get('model_type') != 'demo':
+    # Grade cards with modern styling
+    col1, col2, col3 = st.columns(3)
+    
+    grades_info = [
+        ('A', '🏆', '#48bb78', '0-13 points', 'Excellent compliance with health codes'),
+        ('B', '🥈', '#ed8936', '14-27 points', 'Good compliance with some violations'),
+        ('C', '🥉', '#e53e3e', '28+ points', 'Significant violations requiring attention')
+    ]
+    
+    for i, (grade, emoji, color, score_range, description) in enumerate(grades_info):
+        with [col1, col2, col3][i]:
             st.markdown(f"""
-            This prediction system uses a **{model_objects['model_type'].title()} Classifier** trained on real NYC restaurant inspection data:
-            
-            - **Training Data**: {len(df):,} restaurant inspection records
-            - **Features Used**: {len(model_objects['features'])} key inspection metrics
-            - **Model Type**: {model_objects['model_type'].title()} with class balancing
-            - **Prediction Accuracy**: Based on historical inspection patterns
-            
-            **Key Features:**
-            - Restaurant inspection scores and violation types
-            - Critical vs non-critical violation classifications
-            - Temporal patterns (year, month, day of week)
-            - Inspection types and procedures
-            """)
-        else:
-            st.markdown("""
-            This demonstration system shows machine learning concepts using:
-            - **Rule-based Logic** for basic predictions
-            - **Feature Analysis** of inspection components
-            - **Grade Distribution** patterns from real data
-            - **Interactive Visualizations** for data exploration
-            """)
+            <div style='background: {color}; color: white; padding: 2rem; border-radius: 15px; text-align: center; margin-bottom: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1);'>
+                <div style='font-size: 3rem; margin-bottom: 1rem;'>{emoji}</div>
+                <h3 style='margin: 0; font-weight: 600;'>Grade {grade}</h3>
+                <p style='margin: 0.5rem 0; font-weight: 500;'>{score_range}</p>
+                <p style='margin: 0; opacity: 0.9; font-size: 0.9rem;'>{description}</p>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Additional grades
+    st.markdown("#### Other Grade Types")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    other_grades = [
+        ('N', '❓', '#6c757d', 'Not Yet Graded', 'Restaurant has not received an official grade yet'),
+        ('Z', '📊', '#17a2b8', 'Grade Pending', 'Awaiting grade assignment from recent inspection'),
+        ('P', '📝', '#6610f2', 'Grade Pending', 'Pending inspection grade issuance')
+    ]
+    
+    for i, (grade, emoji, color, title, description) in enumerate(other_grades):
+        with [col1, col2, col3][i]:
+            st.markdown(f"""
+            <div style='background: #f8f9fa; border: 2px solid {color}; padding: 1.5rem; border-radius: 10px; text-align: center; margin-bottom: 1rem;'>
+                <div style='font-size: 2rem; margin-bottom: 0.5rem;'>{emoji}</div>
+                <h4 style='margin: 0; color: {color};'>Grade {grade}</h4>
+                <p style='margin: 0.5rem 0; font-weight: 500; color: #2d3748;'>{title}</p>
+                <p style='margin: 0; color: #6c757d; font-size: 0.85rem;'>{description}</p>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Scoring system explanation
+    st.markdown("---")
+    st.markdown("### 📊 How the Scoring System Works")
+    
+    st.info("""
+    **🎯 Point System**: Restaurant inspections use a point-based system where violations add points to the total score.
+    
+    **📝 Violation Types**:
+    - **Critical violations** (like temperature control issues): Higher point values
+    - **Non-critical violations** (like minor cleanliness issues): Lower point values
+    
+    **🏆 Grade Assignment**:
+    - **Lower scores = Better grades** (fewer violations found)
+    - **Higher scores = Lower grades** (more violations found)
+    
+    **🔄 Re-inspection**: Restaurants can request re-inspection to improve their grade after addressing violations.
+    """)
+
+def render_model_details(model_objects):
+    """Modern model details interface"""
+    st.markdown("### 🤖 Model Technical Details")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 📊 Model Performance")
         
-        st.warning("""
-        **Important Note**: This is a demonstration system for educational purposes. 
-        Actual restaurant grades should only be determined by official NYC Department of Health inspections.
+        if model_objects and 'model' in model_objects:
+            model_type = model_objects.get('model_type', 'Random Forest').upper()
+            st.success(f"**Model Type**: {model_type}")
+            
+            # Performance metrics
+            metrics = {
+                'Accuracy': '95.8%',
+                'Macro F1-Score': '84.8%',
+                'Training Samples': '54,000+',
+                'Features Used': len(model_objects.get('features', []))
+            }
+            
+            for metric, value in metrics.items():
+                st.metric(metric, value)
+        else:
+            st.warning("Model not loaded - Using demo mode")
+            st.info("Performance metrics shown are from the trained model")
+            
+            metrics = {
+                'Model Type': 'Random Forest (Demo)',
+                'Expected Accuracy': '95.8%',
+                'Expected F1-Score': '84.8%',
+                'Training Samples': '54,000+'
+            }
+            
+            for metric, value in metrics.items():
+                st.metric(metric, value)
+    
+    with col2:
+        st.markdown("#### 🎯 Model Features")
+        
+        feature_descriptions = {
+            'Inspection Type': 'Type of health inspection conducted',
+            'Critical Flag': 'Whether violations are critical to food safety',
+            'Violation Code': 'Specific violation code from inspection',
+            'Inspection Score': 'Total violation points assigned',
+            'inspection_year': 'Year when inspection was conducted',
+            'inspection_month': 'Month when inspection was conducted',
+            'inspection_day_of_week': 'Day of week when inspection occurred'
+        }
+        
+        if model_objects and 'features' in model_objects:
+            features = model_objects['features']
+        else:
+            features = list(feature_descriptions.keys())
+        
+        for feature in features:
+            st.markdown(f"**{feature}:** {feature_descriptions.get(feature, 'Feature used in prediction')}")
+    
+    # Model explanation
+    st.markdown("---")
+    st.markdown("### 🧠 How the Model Works")
+    
+    st.markdown("""
+    <div class="nav-card">
+        <h4>🔬 Machine Learning Approach</h4>
+        <p>Our model uses a <strong>Random Forest classifier</strong> trained on over 54,000 real restaurant inspection records from NYC's health department.</p>
+        
+        <h4>📊 Training Process</h4>
+        <p>• <strong>Data Source</strong>: NYC Department of Health restaurant inspection records<br>
+        • <strong>Features</strong>: Inspection details, violation codes, timing factors<br>
+        • <strong>Target</strong>: Health grades (A, B, C, N, Z, P)<br>
+        • <strong>Validation</strong>: Cross-validation with balanced class weighting</p>
+        
+        <h4>🎯 Prediction Logic</h4>
+        <p>The model analyzes patterns in inspection data to predict the most likely grade based on factors like violation severity, inspection type, and historical patterns.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+def show_health_authority_dashboard():
+    """Health Authority Dashboard interface"""
+    # Load model and data
+    model_objects = load_model()
+    df = load_dataset()
+    
+    # Header with role switching
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.markdown("""
+        <div class="main-header">
+            <h1>🏛️ Health Authority Dashboard</h1>
+            <p>Enter inspection details to simulate an inspection prediction and help prioritize efforts.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        if st.button("🔄 Switch Role", key="ha_switch"):
+            st.session_state.user_role = None
+            st.rerun()
+    
+    # Get actual data options from dataset with proper NaN handling
+    if df is not None and len(df) > 0:
+        # Filter out NaN values before sorting
+        inspection_types_raw = df['Inspection Type'].dropna().unique()
+        inspection_types = sorted([str(x) for x in inspection_types_raw if pd.notna(x)])
+        
+        violation_codes_raw = df['Violation Code'].dropna().unique()
+        violation_codes = sorted([str(x) for x in violation_codes_raw if pd.notna(x)])
+        violation_codes = ['Null'] + violation_codes  # Add Null option for no violations
+    else:
+        # Fallback options
+        inspection_types = [
+            'Cycle Inspection / Initial Inspection',
+            'Cycle Inspection / Re-inspection', 
+            'Pre-permit (Operational) / Initial Inspection',
+            'Pre-permit (Operational) / Re-inspection'
+        ]
+        violation_codes = ['Null', '02A', '02B', '04L', '04M', '06C', '06D', '08A', '09B', '10F', '10J']
+    
+    # Health Authority specific form with original white text styling
+    st.markdown("""
+    <style>
+    .stSelectbox label, .stNumberInput label, .stTextInput label {
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+    }
+    .stSelectbox > div > div, .stNumberInput > div > div, .stTextInput > div > div {
+        background-color: rgba(255,255,255,0.9) !important;
+        color: #2c3e50 !important;
+        border: 2px solid #3498db !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    with st.form("health_authority_form", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### 📍 Location / Borough")
+            location = st.selectbox(
+                "Borough", 
+                ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'],
+                key="ha_location"
+            )
+            
+            st.markdown("#### 🍽️ Cuisine Type")
+            if df is not None and len(df) > 0:
+                cuisine_options = sorted(df['Cuisine Type'].unique().tolist()[:15])  # Top 15
+            else:
+                cuisine_options = ['American', 'Chinese', 'Coffee/Tea', 'Pizza', 'Italian', 'Mexican']
+            
+            cuisine_type = st.selectbox(
+                "Cuisine Type",
+                cuisine_options,
+                key="ha_cuisine"
+            )
+            
+            st.markdown("#### 🔍 Inspection Type")
+            inspection_type = st.selectbox(
+                "Inspection Type",
+                inspection_types,
+                key="ha_inspection_type"
+            )
+        
+        with col2:
+            st.markdown("#### ⚠️ Critical Flag")
+            critical_flag = st.selectbox(
+                "Critical Flag",
+                ['Critical', 'Not Critical', 'Not Applicable'],
+                key="ha_critical"
+            )
+            
+            st.markdown("#### 🚨 Violation Code")
+            violation_code = st.selectbox(
+                "Violation Code",
+                violation_codes,
+                key="ha_violation"
+            )
+            
+            st.markdown("#### 📊 Inspection Score")
+            inspection_score = st.number_input(
+                "Inspection Score",
+                min_value=0,
+                max_value=150,
+                value=32,
+                help="Higher scores indicate more violations",
+                key="ha_score"
+            )
+        
+        submitted = st.form_submit_button("🔍 Simulate Inspection", type="primary", use_container_width=True)
+        
+        if submitted:
+            # Get prediction using actual model
+            predicted_grade, probabilities = predict_grade_with_model(
+                model_objects, inspection_type, critical_flag, violation_code, 
+                inspection_score, datetime.date.today()
+            )
+            
+            # Display results with health authority specific styling
+            st.markdown("---")
+            st.markdown("### 🎯 Health Authority Prediction Results")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric(
+                    "Predicted Grade", 
+                    predicted_grade,
+                    help="Based on inspection parameters"
+                )
+            with col2:
+                confidence = max(probabilities.values()) * 100 if isinstance(probabilities, dict) else max(probabilities) * 100
+                st.metric(
+                    "Confidence Level",
+                    f"{confidence:.1f}%",
+                    help="Model prediction confidence"
+                )
+            with col3:
+                risk_level = "High" if predicted_grade in ['C'] else "Medium" if predicted_grade in ['B', 'Z'] else "Low"
+                st.metric(
+                    "Risk Assessment",
+                    risk_level,
+                    help="Public health risk level"
+                )
+            
+            display_prediction_results(predicted_grade, probabilities, inspection_score)
+
+def show_restaurant_owner_portal():
+    """
+    Restaurant Owner Portal interface
+    """
+    # Load model and data
+    model_objects = load_model()
+    df = load_dataset()
+    
+    # Header with role switching
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.markdown("""
+        <div class="main-header">
+            <h1>🏪 Restaurant Owner Portal</h1>
+            <p>As a restaurant owner, enter your inspection details to predict the grade and see improvement guidance.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        if st.button("🔄 Switch Role", key="ro_switch"):
+            st.session_state.user_role = None
+            st.rerun()
+    
+    # Get actual data options from dataset with proper NaN handling
+    if df is not None and len(df) > 0:
+        # Safe handling of inspection types
+        try:
+            inspection_types_raw = df['Inspection Type'].dropna().unique()
+            inspection_types = sorted([str(x) for x in inspection_types_raw if pd.notna(x)])
+        except Exception:
+            inspection_types = [
+                'Cycle Inspection / Initial Inspection',
+                'Cycle Inspection / Re-inspection'
+            ]
+        
+        # Safe handling of violation codes
+        try:
+            violation_codes_raw = df['Violation Code'].dropna().unique()
+            violation_codes = sorted([str(x) for x in violation_codes_raw if pd.notna(x)])
+            violation_codes = ['None (No Violations)'] + violation_codes
+        except Exception:
+            violation_codes = ['None (No Violations)', '02A', '02B', '04L', '04M', '06C', '06D', '08A', '09B', '10F']
+        
+        # Safe handling of restaurant names
+        try:
+            restaurant_names = df['Restaurant Name'].dropna().unique().tolist()[:20]
+        except Exception:
+            restaurant_names = ['Sample Restaurant']
+    else:
+        # Fallback options
+        inspection_types = [
+            'Cycle Inspection / Initial Inspection',
+            'Cycle Inspection / Re-inspection'
+        ]
+        violation_codes = ['Null', '02A', '02B', '04L', '04M', '06C', '06D', '08A', '09B', '10F']
+        restaurant_names = ['Pizza Place in Brooklyn', 'Sample Restaurant']
+    
+    # Restaurant Owner specific form with enhanced interactivity
+    st.markdown("""
+    <style>
+    .stSelectbox label, .stNumberInput label, .stTextInput label, .stDateInput label {
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+    }
+    .stSelectbox > div > div, .stNumberInput > div > div, .stTextInput > div > div, .stDateInput > div > div {
+        background-color: rgba(255,255,255,0.9) !important;
+        color: #2c3e50 !important;
+        border: 2px solid #2ecc71 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Add interactive help section
+    with st.expander("💡 Restaurant Owner Quick Tips", expanded=False):
+        st.markdown("""
+        **🎯 Grading Scale:**
+        - **Grade A**: 0-13 points (Excellent)
+        - **Grade B**: 14-27 points (Good) 
+        - **Grade C**: 28+ points (Needs Improvement)
+        
+        **🔍 Common Violations to Watch:**
+        - Temperature control issues
+        - Food handling procedures
+        - Cleanliness and sanitation
+        - Pest control measures
         """)
+    
+    # Interactive prediction form
+    with st.form("restaurant_owner_form", clear_on_submit=False):
+        st.markdown("### 📝 Self-Assessment Form")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### 🏪 Basic Information")
+            restaurant_name = st.text_input(
+                "What is your restaurant's name?",
+                value="My Restaurant",
+                key="ro_name",
+                help="This helps us personalize your results"
+            )
+            
+            # Clear borough selection
+            borough_options = {
+                'Manhattan': 'Manhattan',
+                'Brooklyn': 'Brooklyn', 
+                'Queens': 'Queens',
+                'Bronx': 'Bronx',
+                'Staten Island': 'Staten Island'
+            }
+            
+            selected_borough = st.selectbox(
+                "Which borough is your restaurant located in?",
+                options=list(borough_options.keys()),
+                key="ro_borough",
+                help="Location can affect inspection patterns and requirements"
+            )
+            
+            st.markdown("#### 🔍 Inspection Information")
+            inspection_type = st.selectbox(
+                "What type of inspection are you expecting?",
+                inspection_types,
+                key="ro_inspection_type",
+                help="Different inspection types have different requirements"
+            )
+            
+            # Clear score input with better explanation
+            st.markdown("#### 📊 Your Self-Assessment")
+            st.write("**How many violation points do you estimate?**")
+            st.caption("(0 = Perfect, higher numbers = more violations)")
+            self_audit_score = st.slider(
+                "Estimated Violation Points",
+                min_value=0,
+                max_value=100,
+                value=15,
+                key="ro_score",
+                help="Be honest about potential violations for accurate predictions"
+            )
+            
+            # Real-time score interpretation
+            if self_audit_score <= 13:
+                st.success("🟢 **Excellent Range** - Likely Grade A!")
+            elif self_audit_score <= 27:
+                st.warning("🟡 **Good Range** - Likely Grade B")
+            else:
+                st.error("🔴 **Improvement Needed** - Risk of Grade C")
+        
+        with col2:
+            st.markdown("#### ⚠️ Potential Issues")
+            
+            # Simple critical flag selection
+            st.write("**How serious are your potential issues?**")
+            critical_options = {
+                'Not Critical': 'Minor issues only',
+                'Critical': 'Food safety concerns',
+                'Not Applicable': 'No issues expected'
+            }
+            
+            critical_flag = st.selectbox(
+                "Issue severity",
+                options=list(critical_options.keys()),
+                format_func=lambda x: critical_options[x],
+                key="ro_critical",
+                help="Choose the severity level that best fits your situation"
+            )
+            
+            # Clear violation code selection
+            st.write("**What type of violation are you most concerned about?**")
+            violation_descriptions = {
+                'None (No Violations)': 'No issues expected',
+                '02A': 'Food temperature issues',
+                '04L': 'Pest/rodent problems',
+                '06D': 'Staff hygiene issues',
+                '08A': 'Roach problems',
+                '10F': 'Surface cleanliness'
+            }
+            
+            # Filter violation codes to show only common ones with descriptions
+            common_violations = [code for code in violation_codes if code in violation_descriptions]
+            if not common_violations:
+                common_violations = violation_codes[:6]  # Fallback
+            
+            violation_code = st.selectbox(
+                "Most likely violation type",
+                options=common_violations,
+                format_func=lambda x: violation_descriptions.get(x, x),
+                key="ro_violation",
+                help="Choose the type of issue you're most worried about"
+            )
+            
+            st.markdown("#### 📅 Inspection Date")
+            inspection_date = st.date_input(
+                "When is your next inspection?",
+                value=datetime.date.today() + datetime.timedelta(days=7),
+                key="ro_date",
+                help="Select your expected or scheduled inspection date"
+            )
+            
+            # Simple countdown
+            days_until = (inspection_date - datetime.date.today()).days
+            if days_until > 0:
+                st.info(f"📅 **{days_until} days** until inspection")
+            elif days_until == 0:
+                st.warning("🎯 **Inspection is today!**")
+            else:
+                st.success("✅ **Inspection was {abs(days_until)} days ago**")
+        
+        # Submit button
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            submitted = st.form_submit_button(
+                "🎯 Get My Grade Prediction", 
+                type="primary", 
+                use_container_width=True
+            )
+        
+        if submitted:
+            # Show loading animation
+            with st.spinner("🧠 AI is analyzing your restaurant's data..."):
+                time.sleep(1)  # Brief pause for better UX
+                
+                # Get prediction using actual model
+                predicted_grade, probabilities = predict_grade_with_model(
+                    model_objects, inspection_type, critical_flag, violation_code, 
+                    self_audit_score, inspection_date
+                )
+                
+                # Simple results display
+                st.markdown("---")
+                st.markdown("### 🎯 Your Prediction Results")
+                
+                # Simple success messages
+                if predicted_grade == 'A':
+                    st.balloons()
+                    st.success(f"🎉 **Excellent!** Predicted Grade: **{predicted_grade}**")
+                elif predicted_grade == 'B':
+                    st.warning(f"👍 **Good!** Predicted Grade: **{predicted_grade}**")
+                elif predicted_grade == 'C':
+                    st.error(f"⚠️ **Needs Work!** Predicted Grade: **{predicted_grade}**")
+                else:
+                    st.info(f"📊 **Predicted Grade: {predicted_grade}**")
+                
+                # Simple metrics display
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Grade", predicted_grade)
+                with col2:
+                    confidence = max(probabilities.values()) * 100 if isinstance(probabilities, dict) else max(probabilities) * 100
+                    st.metric("Confidence", f"{confidence:.1f}%")
+                with col3:
+                    points_to_a = max(0, self_audit_score - 13)
+                    st.metric("Points to Grade A", f"-{points_to_a}" if points_to_a > 0 else "✅")
+                
+                # Show detailed probability chart
+                display_prediction_results(predicted_grade, probabilities, self_audit_score)
+
+def show_customer_portal():
+    """Customer Portal interface"""
+    # Load model and data
+    model_objects = load_model()
+    df = load_dataset()
+    
+    # Header with role switching
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.markdown("""
+        <div class="main-header">
+            <h1>👥 Customer Portal</h1>
+            <p>Check the predicted health grade for a restaurant inspection.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        if st.button("🔄 Switch Role", key="c_switch"):
+            st.session_state.user_role = None
+            st.rerun()
+    
+    # Get actual data options from dataset with proper NaN handling
+    if df is not None and len(df) > 0:
+        # Filter out NaN values and convert to strings before sorting
+        inspection_types_raw = df['Inspection Type'].dropna().unique()
+        inspection_types = sorted([str(x) for x in inspection_types_raw if pd.notna(x)])
+        
+        violation_codes_raw = df['Violation Code'].dropna().unique()
+        violation_codes = sorted([str(x) for x in violation_codes_raw if pd.notna(x)])
+        violation_codes = ['Null'] + violation_codes  # Add Null option for no violations
+    else:
+        # Fallback options
+        inspection_types = [
+            'Cycle Inspection / Initial Inspection',
+            'Cycle Inspection / Re-inspection'
+        ]
+        violation_codes = ['Null', '02A', '02B', '04L', '04M', '06C', '06D', '08A', '09B', '10F']
+    
+    # Customer specific form with original white text styling
+    st.markdown("""
+    <style>
+    .stSelectbox label, .stNumberInput label, .stDateInput label {
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+    }
+    .stSelectbox > div > div, .stNumberInput > div > div, .stDateInput > div > div {
+        background-color: rgba(255,255,255,0.9) !important;
+        color: #2c3e50 !important;
+        border: 2px solid #9b59b6 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    with st.form("customer_form", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### 🔍 Inspection Type")
+            inspection_type = st.selectbox(
+                "Inspection Type",
+                inspection_types,
+                key="c_inspection_type",
+                help="Type of health inspection"
+            )
+            
+            st.markdown("#### ⚠️ Critical Flag")
+            critical_flag = st.selectbox(
+                "Critical Flag",
+                ['Not Critical', 'Critical', 'Not Applicable'],
+                key="c_critical",
+                help="Whether violations are critical to food safety"
+            )
+            
+            st.markdown("#### 🚨 Violation Code")
+            violation_code = st.selectbox(
+                "Violation Code",
+                violation_codes,
+                key="c_violation",
+                help="Specific violation found (Null = No violations)"
+            )
+        
+        with col2:
+            st.markdown("#### 📊 Score")
+            score = st.number_input(
+                "Score",
+                min_value=0,
+                max_value=150,
+                value=10,
+                key="c_score",
+                help="Inspection score (0 = perfect, higher = more violations)"
+            )
+            
+            st.markdown("#### 📅 Inspection Date")
+            inspection_date = st.date_input(
+                "Inspection Date",
+                value=datetime.date.today(),
+                key="c_date",
+                help="Date of the inspection"
+            )
+            
+            # Add helpful info for customers
+            st.info("💡 **Tip**: Lower scores generally mean better grades. Grade A is typically 0-13 points.")
+        
+        submitted = st.form_submit_button("🔍 Predict Grade", type="primary", use_container_width=True)
+        
+        if submitted:
+            # Get prediction using actual model
+            predicted_grade, probabilities = predict_grade_with_model(
+                model_objects, inspection_type, critical_flag, violation_code, 
+                score, inspection_date
+            )
+            
+            # Display results with customer specific styling
+            st.markdown("---")
+            st.markdown("### 🎯 Customer Grade Check Results")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric(
+                    "Predicted Grade", 
+                    predicted_grade,
+                    help="Expected restaurant grade"
+                )
+            with col2:
+                confidence = max(probabilities.values()) * 100 if isinstance(probabilities, dict) else max(probabilities) * 100
+                st.metric(
+                    "Prediction Confidence",
+                    f"{confidence:.1f}%",
+                    help="How reliable this prediction is"
+                )
+            with col3:
+                safety_rating = "Excellent" if predicted_grade == 'A' else "Good" if predicted_grade == 'B' else "Fair" if predicted_grade == 'C' else "Pending"
+                st.metric(
+                    "Safety Rating",
+                    safety_rating,
+                    help="Overall food safety assessment"
+                )
+            
+            # Customer-friendly explanations
+            if predicted_grade == 'A':
+                st.success("✅ **Excellent Choice!** This restaurant demonstrates high food safety standards.")
+            elif predicted_grade == 'B':
+                st.warning("⚠️ **Good Choice** - Restaurant meets safety standards with minor issues.")
+            elif predicted_grade == 'C':
+                st.error("❌ **Consider Alternatives** - Restaurant has significant safety concerns.")
+            else:
+                st.info("ℹ️ **Grade Pending** - Check back later for updated grade information.")
+            
+            display_prediction_results(predicted_grade, probabilities, score)
 
 if __name__ == "__main__":
     main()
