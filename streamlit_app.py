@@ -78,18 +78,18 @@ st.markdown("""
     }
     
     .role-card.health-authority {
-        border-color: #3498db;
-        background: linear-gradient(135deg, #3498db22, #3498db11);
+        border-color: #7c3aed;
+        background: linear-gradient(135deg, #7c3aed22, #7c3aed11);
     }
     
     .role-card.restaurant-owner {
-        border-color: #2ecc71;
-        background: linear-gradient(135deg, #2ecc7122, #2ecc7111);
+        border-color: #8b5cf6;
+        background: linear-gradient(135deg, #8b5cf622, #8b5cf611);
     }
     
     .role-card.customer {
-        border-color: #9b59b6;
-        background: linear-gradient(135deg, #9b59b622, #9b59b611);
+        border-color: #a855f7;
+        background: linear-gradient(135deg, #a855f722, #a855f711);
     }
     
     .role-icon {
@@ -113,7 +113,7 @@ st.markdown("""
     
     /* Header Styling */
     .main-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
         padding: 2rem;
         border-radius: 15px;
         text-align: center;
@@ -180,7 +180,7 @@ st.markdown("""
         padding: 1.5rem;
         background: #ffffff !important;
         border-radius: 10px;
-        border-left: 4px solid #667eea;
+        border-left: 4px solid #8b5cf6;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
@@ -193,7 +193,7 @@ st.markdown("""
     
     /* Metric Cards */
     .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
         border-radius: 15px;
         padding: 2rem;
         text-align: center;
@@ -315,7 +315,7 @@ st.markdown("""
     
     .stSelectbox > div > div, .stTextInput > div > div, .stNumberInput > div > div {
         background-color: #ffffff !important;
-        border: 2px solid #667eea !important;
+        border: 2px solid #8b5cf6 !important;
         border-radius: 8px !important;
         color: #000000 !important;
         font-weight: 800 !important;
@@ -395,7 +395,7 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.95) !important;
         padding: 0.8rem 1rem !important;
         border-radius: 10px !important;
-        border-left: 6px solid #667eea !important;
+        border-left: 6px solid #8b5cf6 !important;
         margin: 1rem 0 0.5rem 0 !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
         text-shadow: none !important;
@@ -432,7 +432,7 @@ st.markdown("""
     
     /* Button Styling */
     .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
         color: white;
         border: none;
         border-radius: 10px;
@@ -440,12 +440,12 @@ st.markdown("""
         font-weight: 600;
         font-size: 1.1rem;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
     }
     
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.6);
     }
     
     /* Selectbox Styling */
@@ -456,8 +456,8 @@ st.markdown("""
     }
     
     .stSelectbox > div > div:focus-within {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
     }
     
     /* Number Input Styling */
@@ -468,8 +468,8 @@ st.markdown("""
     }
     
     .stNumberInput > div > div:focus-within {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
     }
     
     /* Hide Streamlit Branding */
@@ -1565,7 +1565,7 @@ def render_analytics_dashboard(df):
                     x='Inspection Score',
                     nbins=30,
                     title="Distribution of Inspection Scores",
-                    color_discrete_sequence=['#667eea']
+                    color_discrete_sequence=['#8b5cf6']
                 )
                 
                 fig.update_layout(height=400)
@@ -1765,7 +1765,7 @@ def show_health_authority_dashboard():
     .stSelectbox > div > div, .stNumberInput > div > div, .stTextInput > div > div {
         background-color: rgba(255,255,255,0.9) !important;
         color: #2c3e50 !important;
-        border: 2px solid #3498db !important;
+        border: 2px solid #7c3aed !important;
     }
     </style>
     """, unsafe_allow_html=True)
