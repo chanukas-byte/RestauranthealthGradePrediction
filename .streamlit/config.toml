@@ -1,25 +1,20 @@
 [server]
 headless = true
 enableCORS = false
-enableXsrfProtection = false
 port = 8501
-address = "0.0.0.0"
-maxUploadSize = 200
 
 [theme]
-primaryColor = "#667eea"
-backgroundColor = "#1e1e2e"
-secondaryBackgroundColor = "#2d3748"
-textColor = "#ffffff"
+primaryColor = "#1f77b4"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
 font = "sans serif"
 
 [browser]
 gatherUsageStats = false
-serverAddress = "0.0.0.0"
 
 [logger]
 level = "info"
 
 [client]
-displayEnabled = true
 showErrorDetails = false
